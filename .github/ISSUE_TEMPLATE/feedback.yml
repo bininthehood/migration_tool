@@ -1,0 +1,47 @@
+name: 자동화 피드백 반영
+about: run-all 실행 후 발견된 개선사항/오류를 기록합니다.
+title: "[Feedback] "
+labels: ["feedback"]
+assignees: []
+
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 요약
+      description: 어떤 상황에서 어떤 문제가 발생했는지 간단히 작성해주세요.
+      placeholder: 예) /login 진입 시 sessionChecker=0인데 sessionInfo 필수값 누락으로 /main 오진입
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: 실행 환경
+      description: 프로젝트 경로, 브랜치, 포트, 실행 명령을 작성해주세요.
+      placeholder: |
+        - ProjectRoot:
+        - Branch:
+        - Ports:
+        - Command:
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 근거 로그/캡처
+      description: 로그 핵심 구간, 캡처 경로를 남겨주세요.
+      placeholder: |
+        - automation/logs/run-*.json:
+        - 서버 로그:
+        - captures/manual-parity/...:
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안 수정안
+      description: 재발 방지 관점의 수정 방향을 적어주세요.
+      placeholder: 예) sessionChecker 단독 리다이렉트 금지, sessionInfo 필수값 검증 강제
