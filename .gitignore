@@ -1,0 +1,14 @@
+# Runtime logs and generated outputs
+automation/logs/
+dist/
+captures/
+
+# Frontend runtime artifacts
+src/main/frontend/node_modules/
+src/main/frontend/build/
+
+# Local/editor
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db

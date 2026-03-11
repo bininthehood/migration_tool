@@ -1,0 +1,42 @@
+version: 1
+
+inputs:
+  required:
+    standards:
+      - AGENTS.md
+      - WORKFLOW.md
+      - docs/project-docs/README_FRONTEND_BUILD_DEPLOY.md
+      - docs/project-docs/REACT_CAPTURE_AUTOMATION.md
+      - docs/project-docs/docs-cutover-checklist.md
+      - docs/project-docs/docs-screen-capture-template.md
+      - docs/project-docs/docs-main-workspace-migration-guide.md
+    state:
+      - LATEST_STATE.md
+      - TASK_BOARD.md
+      - docs-migration-backlog.md
+      - docs/project-docs/docs-migration-inventory.md
+      - docs/project-docs/docs-main-qa-report.md
+  optional:
+    state:
+      - docs/project-docs/docs-dashboard-status-parity.md
+      - docs/project-docs/docs-ui-main-capture-review.md
+      - docs/project-docs/SESSION_WORKLOG_2026-03-03.md
+    references:
+      - docs/project-docs/PROJECT_CONTEXT.md
+      - docs/project-docs/REPOSITORY_MAP.md
+      - docs/project-docs/CODEBASE_INDEX.md
+      - docs/project-docs/ENDPOINT_MAP.md
+      - docs/project-docs/SYSTEM_ARCHITECTURE.md
+      - docs/project-docs/ARCHITECTURE_DECISIONS.md
+      - docs/project-docs/AI_DEV_GUIDE.md
+      - docs/project-docs/AGENTS_README.md
+      - README.md
+      - Tasks/README.md
+
+excludes:
+  - "*.bak"
+
+policies:
+  fail_on_missing_required: true
+  allow_backup_as_primary: false
+  keep_root_docs_in_place: false
