@@ -59,17 +59,86 @@ function Wait-PortListening([int]$Port, [int]$TimeoutSec) {
   return $false
 }
 
+function New-Utf8NoBomEncoding() {
+  return New-Object System.Text.UTF8Encoding($false)
+}
+
+function Write-Utf8NoBomFile([string]$Path, [string]$Content) {
+  $dir = Split-Path -Path $Path -Parent
+  if ($dir -and -not (Test-Path $dir)) {
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+  }
+  [System.IO.File]::WriteAllText($Path, $Content, (New-Utf8NoBomEncoding))
+}
+
+function Append-Utf8NoBomFile([string]$Path, [string]$Content) {
+  $dir = Split-Path -Path $Path -Parent
+  if ($dir -and -not (Test-Path $dir)) {
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+  }
+  [System.IO.File]::AppendAllText($Path, $Content, (New-Utf8NoBomEncoding))
+}
+
+function Test-MojibakePattern([string]$Path) {
+  $patterns = @(
+    [regex]::Escape([string][char]0xFFFD),
+    '\?\p{IsHangulSyllables}'
+  )
+  $content = [System.IO.File]::ReadAllText($Path)
+  foreach ($pattern in $patterns) {
+    if ($content -match $pattern) { return $true }
+  }
+  return $false
+}
+
+function Get-MojibakeCandidates([string]$RootPath) {
+  $candidateDirs = @(
+    (Join-Path $RootPath 'src'),
+    (Join-Path $RootPath 'automation')
+  ) | Where-Object { Test-Path $_ } | Select-Object -Unique
+  $extensions = @('.js', '.jsx', '.ts', '.tsx', '.java', '.xml', '.jsp', '.ps1')
+  $out = New-Object System.Collections.Generic.List[string]
+  foreach ($dir in $candidateDirs) {
+    Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue |
+      Where-Object {
+        $extensions -contains $_.Extension.ToLowerInvariant() -and
+        $_.FullName -notmatch '\\node_modules\\|\\build(_automation_smoke)?\\|\\target\\|\\dist\\|\\captures\\|\\src\\main\\webapp\\resources\\component\\' -and
+        $_.FullName -notmatch '\\automation\\run-all\.ps1$' -and
+        $_.FullName -notmatch '\\src\\main\\java\\com\\rays\\app\\util\\data\\EncodingFixUtil\.java$' -and
+        $_.FullName -notmatch '\\src\\main\\java\\com\\rays\\app\\util\\file\\CompressionUtil\.java$'
+      } |
+      ForEach-Object {
+        try {
+          if (Test-MojibakePattern -Path $_.FullName) {
+            $relative = $_.FullName
+            if ($relative.StartsWith($RootPath)) {
+              $relative = $relative.Substring($RootPath.Length).TrimStart('\')
+            }
+            $out.Add($relative)
+          }
+        }
+        catch {
+          # ignore unreadable files
+        }
+      }
+  }
+  return @($out | Select-Object -Unique)
+}
+
 function Get-ErrorCode([string]$Message) {
   if ([string]::IsNullOrWhiteSpace($Message)) { return 'UNKNOWN' }
   if ($Message -match 'EPERM|browserType\.launch|spawn EPERM') { return 'CAPTURE_EPERM' }
   if ($Message -match 'EADDRINUSE|port 3000|port 8080|already in use') { return 'PORT_CONFLICT' }
   if ($Message -match 'Missing .*\.ps1|Missing C:') { return 'SCRIPT_MISSING' }
   if ($Message -match 'npm run build failed|frontend compile check failed|npm ERR!') { return 'NPM_BUILD_FAIL' }
+  if ($Message -match 'UTF8_MOJIBAKE_DETECTED') { return 'UTF8_MOJIBAKE_DETECTED' }
+  if ($Message -match 'FRONTEND_DEVSERVER_START_FAIL|capture dev server start failed|capture dev server did not become ready') { return 'FRONTEND_DEVSERVER_START_FAIL' }
   if ($Message -match 'routing check failed') { return 'ROUTING_CONTRACT_FAIL' }
   if ($Message -match 'screen migration step failed') { return 'MIGRATION_EXEC_FAIL' }
   if ($Message -match 'validate step failed') { return 'PREFLIGHT_FAIL' }
   if ($Message -match 'doc-sync step failed|run-doc-sync') { return 'DOC_SYNC_FAIL' }
   if ($Message -match 'TOMCAT_NOT_READY') { return 'TOMCAT_NOT_READY' }
+  if ($Message -match 'TOMCAT_UI_NOT_READY') { return 'TOMCAT_UI_NOT_READY' }
   if ($Message -match 'TOMCAT_CONTROL_FAIL') { return 'TOMCAT_CONTROL_FAIL' }
   if ($Message -match 'Cannot find module ''playwright''|Cannot find module|frontend deps install failed') { return 'FRONTEND_DEPS_MISSING' }
   if ($Message -match 'Executable doesn''t exist at|playwright install|browser executable') { return 'PLAYWRIGHT_BROWSER_MISSING' }
@@ -101,6 +170,16 @@ function Invoke-TrackedStep([string]$Name, [scriptblock]$Action) {
     $code = Get-ErrorCode -Message $message
     Add-StepResult -Name $Name -Status 'failed' -DurationSec $sw.Elapsed.TotalSeconds -ErrorCode $code -ErrorMessage $message
     throw
+  }
+}
+
+function Test-HttpReady([string]$Url) {
+  try {
+    $resp = Invoke-WebRequest -Uri $Url -Method Get -UseBasicParsing -TimeoutSec 8
+    return ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400)
+  }
+  catch {
+    return $false
   }
 }
 
@@ -136,10 +215,13 @@ function Get-ImprovementSuggestions([string]$ResolvedLogDir, [int]$Window) {
       'PORT_CONFLICT' { 'Preflight-check ports 3000/8080 and auto-handle conflicts before capture/build.' }
       'SCRIPT_MISSING' { 'Fail fast on missing automation/skills files and print exact remediation steps.' }
       'NPM_BUILD_FAIL' { 'Run dependency verification before build and auto-suggest npm install/ci.' }
+      'UTF8_MOJIBAKE_DETECTED' { 'Fail fast on UTF-8 mojibake patterns before build/doc sync and print affected files.' }
+      'FRONTEND_DEVSERVER_START_FAIL' { 'Capture dev-server stdout/stderr, set BROWSER=none, and detect early process exit separately from port conflicts.' }
       'MIGRATION_EXEC_FAIL' { 'Validate migration-screen-map entries (id/group/legacyUrl/reactRoute) before orchestration.' }
       'ROUTING_CONTRACT_FAIL' { 'Print focused routing diffs for dispatcher-servlet.xml and controllers on failure.' }
       'DOC_SYNC_FAIL' { 'Search session logs in both root and docs/project-docs paths by default.' }
       'TOMCAT_CONTROL_FAIL' { 'Validate CATALINA_HOME/BASE/JRE paths and automate startup/shutdown with health polling.' }
+      'TOMCAT_UI_NOT_READY' { 'Distinguish Tomcat process readiness from SPA /ui deployment readiness and print both URLs.' }
       'FRONTEND_DEPS_MISSING' { 'Auto-run npm install in src/main/frontend before capture/build when dependencies are missing.' }
       'PLAYWRIGHT_BROWSER_MISSING' { 'Auto-run npx playwright install before capture when browser binaries are missing.' }
       'FRONTEND_BOOTSTRAP_REQUIRED' { 'Add frontend bootstrap step (src/main/frontend + package/capture script) before migration run.' }
@@ -201,10 +283,10 @@ function Write-FeedbackArtifacts() {
   }
 
   $logFile = Join-Path $resolvedLogDir ("run-{0}.json" -f $script:runId)
-  $runLog | ConvertTo-Json -Depth 8 | Set-Content -Path $logFile -Encoding UTF8
+  Write-Utf8NoBomFile -Path $logFile -Content ($runLog | ConvertTo-Json -Depth 8)
 
   if (-not (Test-Path $resolvedFeedback)) {
-    Set-Content -Path $resolvedFeedback -Encoding UTF8 -Value "# Migration Automation Feedback`n"
+    Write-Utf8NoBomFile -Path $resolvedFeedback -Content "# Migration Automation Feedback`n"
   }
 
   $stepLines = @($script:stepResults | ForEach-Object {
@@ -240,7 +322,84 @@ $failureCodeLines
 ### Improvement Suggestions
 $suggestionLines
 "@
-  Add-Content -Path $resolvedFeedback -Value $entry -Encoding UTF8
+  Append-Utf8NoBomFile -Path $resolvedFeedback -Content $entry
+
+  $manifestPath = Join-Path $ProjectRoot 'automation/next-session-manifest.json'
+  $recommendedCommand = "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $ProjectRoot -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -DisableAutoInstallFrontendDeps"
+  $fallbackCommand = "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $ProjectRoot -CaptureMode none -DisableAutoInstallFrontendDeps"
+  $latestFailedStep = $failedSteps | Select-Object -First 1
+  $manifest = [ordered]@{
+    format_version = 1
+    updated_at = (Get-Date).ToString('o')
+    phase = 'Transition'
+    purpose = 'Compact execution manifest for rerunning the same automation test next session.'
+    read_order = @(
+      'AGENTS.md',
+      'automation/next-session-manifest.json',
+      'LATEST_STATE.md',
+      'docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md'
+    )
+    preferred_flow = [ordered]@{
+      id = 'tomcat_runtime_capture'
+      reason = 'Validated on 2026-03-11 as the most stable path.'
+      command = $recommendedCommand
+      requires_elevation = $true
+      base_url = 'http://localhost:8080'
+      context_path = '/rays'
+      success_criteria = @(
+        'Tomcat Ready Check success',
+        'Verify Session Contract success',
+        'Frontend Compile Check success',
+        'Run Capture success',
+        'Sync Session Log success'
+      )
+      expected_runtime = [ordered]@{
+        automation_only_sec = 70.26
+        practical_elapsed_minutes = '10-20'
+      }
+    }
+    fallback_flow = [ordered]@{
+      id = 'no_capture_validation'
+      command = $fallbackCommand
+      use_when = 'Use when browser capture permission (EPERM) or GUI constraints block preset execution.'
+    }
+    environment = [ordered]@{
+      tomcat_base_url = $TomcatBaseUrl
+      tomcat_context_path = $TomcatContextPath
+      capture_base_url = $CaptureBaseUrl
+      frontend_dev_port = $CaptureDevServerPort
+      encoding = 'UTF-8 without BOM'
+    }
+    latest_run = [ordered]@{
+      run_id = $script:runId
+      status = $script:runStatus
+      log = "automation/logs/run-$($script:runId).json"
+      duration_sec = $totalDuration
+      failed_step = if ($latestFailedStep) { $latestFailedStep.name } else { '' }
+      failed_code = if ($latestFailedStep) { $latestFailedStep.error_code } else { '' }
+    }
+    validated_capture_reference = [ordered]@{
+      run_id = '20260311-145541'
+      status = 'success'
+      log = 'automation/logs/run-20260311-145541.json'
+      capture_mode = 'preset'
+      capture_base_url = 'http://localhost:8080'
+      duration_sec = 70.26
+    }
+    known_constraints = @(
+      'Playwright capture is reliable when executed with elevated permission.',
+      'UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.',
+      'Tomcat readiness and /ui readiness are handled as separate states.'
+    )
+    post_run_updates = @(
+      'docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md',
+      'LATEST_STATE.md',
+      'TASK_BOARD.md',
+      'docs-migration-backlog.md',
+      'dist/migration-kit'
+    )
+  }
+  Write-Utf8NoBomFile -Path $manifestPath -Content ($manifest | ConvertTo-Json -Depth 8)
 }
 
 $script:executedCommands = @()
@@ -272,6 +431,14 @@ if ((-not [string]::IsNullOrWhiteSpace($MigrateScreen) -or -not [string]::IsNull
 }
 
 try {
+  Invoke-TrackedStep 'UTF-8 Mojibake Check' {
+    $hits = Get-MojibakeCandidates -RootPath $ProjectRoot
+    if ($hits.Count -gt 0) {
+      $topHits = ($hits | Select-Object -First 10) -join ', '
+      throw "UTF8_MOJIBAKE_DETECTED: UTF-8 mojibake pattern found in $($hits.Count) file(s): $topHits"
+    }
+  }
+
   if (-not $SkipFrontendCheck) {
     Invoke-TrackedStep 'Frontend Bootstrap Check' {
       $frontendDir = Join-Path $ProjectRoot 'src/main/frontend'
@@ -360,6 +527,7 @@ try {
   if (-not $SkipTomcatCheck) {
     Invoke-TrackedStep 'Tomcat Ready Check' {
       $healthUrl = "{0}{1}{2}" -f $TomcatBaseUrl.TrimEnd('/'), $TomcatContextPath, $TomcatHealthPath
+      $loginUrl = "{0}{1}/login" -f $TomcatBaseUrl.TrimEnd('/'), $TomcatContextPath
       $script:executedCommands += "GET $healthUrl"
       try {
         $resp = Invoke-WebRequest -Uri $healthUrl -Method Get -UseBasicParsing -TimeoutSec 8
@@ -368,6 +536,9 @@ try {
         }
       }
       catch {
+        if (Test-HttpReady -Url $loginUrl) {
+          throw "TOMCAT_UI_NOT_READY: Tomcat responds at $loginUrl but SPA entry $healthUrl is not ready. Check dispatcher-servlet.xml /ui mappings and WTP publish state."
+        }
         throw "TOMCAT_NOT_READY: cannot reach $healthUrl. Please start Tomcat once, then rerun."
       }
     }
@@ -481,12 +652,50 @@ try {
       $frontendDir = Join-Path $ProjectRoot 'src/main/frontend'
       $cmd = "cd `"$frontendDir`"; npm run dev"
       $script:executedCommands += $cmd
-      $proc = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','npm run dev' -WorkingDirectory $frontendDir -PassThru
-      Write-Host "Capture dev server started. PID=$($proc.Id), port=$CaptureDevServerPort"
-
-      if (-not (Wait-PortListening -Port $CaptureDevServerPort -TimeoutSec $CaptureDevServerStartTimeoutSec)) {
-        throw "capture dev server did not become ready on port $CaptureDevServerPort within ${CaptureDevServerStartTimeoutSec}s"
+      $resolvedLogDir = Join-Path $ProjectRoot $LogDir
+      if (-not (Test-Path $resolvedLogDir)) {
+        New-Item -ItemType Directory -Path $resolvedLogDir -Force | Out-Null
       }
+      $stdoutLog = Join-Path $resolvedLogDir ("devserver-{0}.out.log" -f $script:runId)
+      $stderrLog = Join-Path $resolvedLogDir ("devserver-{0}.err.log" -f $script:runId)
+      $npmCmd = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
+      if (-not $npmCmd) {
+        throw 'FRONTEND_DEVSERVER_START_FAIL: npm.cmd not found'
+      }
+      $proc = Start-Process -FilePath 'cmd.exe' `
+        -ArgumentList '/c', "set BROWSER=none && `"$npmCmd`" run dev" `
+        -WorkingDirectory $frontendDir `
+        -RedirectStandardOutput $stdoutLog `
+        -RedirectStandardError $stderrLog `
+        -PassThru
+      Write-Host "Capture dev server started. PID=$($proc.Id), port=$CaptureDevServerPort, stdout=$stdoutLog, stderr=$stderrLog"
+
+      $deadline = (Get-Date).AddSeconds($CaptureDevServerStartTimeoutSec)
+      do {
+        if (Wait-PortListening -Port $CaptureDevServerPort -TimeoutSec 2) { return }
+        if ($proc.HasExited) {
+          $stdoutTail = ''
+          $stderrTail = ''
+          if (Test-Path $stdoutLog) {
+            $stdoutTail = (Get-Content -Path $stdoutLog -Tail 20 -ErrorAction SilentlyContinue) -join ' | '
+          }
+          if (Test-Path $stderrLog) {
+            $stderrTail = (Get-Content -Path $stderrLog -Tail 20 -ErrorAction SilentlyContinue) -join ' | '
+          }
+          throw "FRONTEND_DEVSERVER_START_FAIL: pid $($proc.Id) exited with code $($proc.ExitCode). stdout=[$stdoutTail] stderr=[$stderrTail]"
+        }
+        Start-Sleep -Seconds 2
+      } while ((Get-Date) -lt $deadline)
+
+      $stdoutTail = ''
+      $stderrTail = ''
+      if (Test-Path $stdoutLog) {
+        $stdoutTail = (Get-Content -Path $stdoutLog -Tail 20 -ErrorAction SilentlyContinue) -join ' | '
+      }
+      if (Test-Path $stderrLog) {
+        $stderrTail = (Get-Content -Path $stderrLog -Tail 20 -ErrorAction SilentlyContinue) -join ' | '
+      }
+      throw "FRONTEND_DEVSERVER_START_FAIL: port $CaptureDevServerPort not ready within ${CaptureDevServerStartTimeoutSec}s. stdout=[$stdoutTail] stderr=[$stderrTail]"
     }
   }
 

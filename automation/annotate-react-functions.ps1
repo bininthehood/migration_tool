@@ -61,7 +61,6 @@ function Is-GeneratedComment([string]$line) {
       $PhraseBuild, $PhraseUiControl, $PhraseEvent, $PhraseState, $PhraseCondition,
       $PhraseValidate, $PhraseDefault
     )) { return $true }
-  # Remove old mojibake comments that still include React keyword.
   if ($suffix -match 'React') { return $true }
   return $false
 }

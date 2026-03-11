@@ -14,6 +14,12 @@ function Ensure-Dir([string]$Path) {
   }
 }
 
+function Write-Utf8NoBomFile([string]$Path, [string[]]$Content) {
+  Ensure-Dir (Split-Path -Parent $Path)
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path, ($Content -join [Environment]::NewLine), $enc)
+}
+
 function Add-PathIfExists([System.Collections.Generic.List[string]]$List, [string]$AbsPath) {
   if (Test-Path $AbsPath) {
     $List.Add($AbsPath)
@@ -139,7 +145,7 @@ $manifest += 'Included Paths:'
 $manifest += (Get-ChildItem -Path $stagingDir -Recurse | ForEach-Object {
   $_.FullName.Substring($stagingDir.Length).TrimStart('\', '/')
 } | Sort-Object)
-Set-Content -Path $manifestPath -Value $manifest -Encoding UTF8
+Write-Utf8NoBomFile -Path $manifestPath -Content $manifest
 
 $zipPath = Join-Path $resolvedOutputDir "$PackageName.zip"
 if (Test-Path $zipPath) {

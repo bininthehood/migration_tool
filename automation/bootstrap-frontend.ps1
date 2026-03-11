@@ -25,6 +25,12 @@ function Ensure-Dir([string]$Path) {
   }
 }
 
+function Write-Utf8NoBomFile([string]$Path, [string]$Content) {
+  Ensure-Dir (Split-Path -Parent $Path)
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path, $Content, $enc)
+}
+
 function Copy-FileIfMissing([string]$TemplatePath, [string]$TargetPath) {
   if (Test-Path $TargetPath) { return $false }
   if (-not (Test-Path $TemplatePath)) { return $false }
@@ -148,7 +154,7 @@ if (-not (Test-Path $pkgPath)) {
   }
 }
 '@
-  Set-Content -Path $pkgPath -Value $pkg -Encoding UTF8
+  Write-Utf8NoBomFile -Path $pkgPath -Content $pkg
 }
 
 # Fallback capture script if template file is not available.
@@ -188,7 +194,7 @@ main().catch((err) => {
   process.exit(1);
 });
 '@
-  Set-Content -Path $capturePath -Value $capture -Encoding UTF8
+  Write-Utf8NoBomFile -Path $capturePath -Content $capture
 }
 
 if ($InstallDeps) {

@@ -29,8 +29,13 @@ $(($Captures | ForEach-Object { "  - $_" }) -join "`n")
   - docs-main-qa-report.md (if impacted)
 "@
 
+function Append-Utf8NoBomFile([string]$Path, [string]$Content) {
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::AppendAllText($Path, $Content, $enc)
+}
+
 if ($Apply -and $SessionLog) {
-  Add-Content -Path $SessionLog -Value $entry -Encoding UTF8
+  Append-Utf8NoBomFile -Path $SessionLog -Content $entry
   "Appended session log entry: $SessionLog"
 } else {
   $entry

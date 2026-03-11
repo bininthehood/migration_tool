@@ -53,9 +53,39 @@
 1. 컷오버 이후 운영 모니터링(로그/권한/팝업 예외) 단기 추적
 2. 잔여 JSP 전환 후보 착수: 결재 문서 팝업(`approve/document/v1/format_00,01`) -> React 전환 설계/구현
 3. 수렴 단계 문서 정리 및 잔여 레거시(`error/*`, `download*`, `common/*`) 유지/전환 정책 확정
-4. 자동화 안정화: `run-all.ps1` 캡처 단계의 대상 URL 선택(DEV `:3000` vs Tomcat `:8080`) 및 사전점검 규칙 명시
+4. 자동화 안정화: `run-all.ps1` 캡처 단계의 대상 URL 선택(DEV `:3000` vs Tomcat `:8080`), UTF-8/mojibake 사전점검, dev server 기동 실패 분리
 
 ## 최신 검증 로그
+- 2026-03-11: `run-all.ps1` 전체 오케스트레이션 성공 (`CaptureMode preset`, Tomcat 기준)
+  - 실행: `powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\Users\rays\ArcFlow_Webv1.2_test4 -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -DisableAutoInstallFrontendDeps`
+  - 결과: `Tomcat Ready Check`, `Verify Session Contract`, `Frontend Compile Check`, `Run Capture`, `Sync Session Log` 모두 성공
+  - 캡처: Tomcat 런타임 기준 22개 라우트 PASS (`captures/main/react-*-1920x911-2.png`)
+  - 로그: `automation/logs/run-20260311-145541.json`
+  - 주의: 동일 명령은 샌드박스 내부에선 Playwright `spawn EPERM` 이 날 수 있어, 브라우저 캡처가 포함된 런은 권한 상승 실행 기준으로 본다.
+- 2026-03-11: 결재 문서 팝업 React 브리지 문구/인코딩 정리
+  - 대상: `src/main/frontend/src/pages/approve/ApprovalDocumentBridgePage.js`
+  - 조치: 상단 깨진 주석 제거, 사용자 노출 문구를 한국어 기준으로 정리
+  - 검증: `npm run build` 성공 (build hash: `main.27e993f5.js`, warning only: `react-datepicker` critical dependency)
+- 2026-03-11: 결재 팝업 접근 로직 보정
+  - 대상: `src/main/frontend/src/utils/approvalPopup.js`
+  - 조치: 팝업 차단/오류 문구 정리, 취소 요청(`REQ_STATUS = X`)도 차단하지 않고 `docType 06` 읽기 전용 경로로 열리도록 수정
+  - 검증: `npm run build` 성공 (build hash: `main.68e43150.js`, warning only: `react-datepicker` critical dependency)
+- 2026-03-11: 결재/요청 목록 패널 한글 깨짐 정리
+  - 대상: `src/main/frontend/src/pages/approve/ApprovePanel.js`, `src/main/frontend/src/pages/approve/ApproveRequestPanel.js`
+  - 조치: 목록/필터/상세 모달 문구를 한국어 기준으로 재정리
+  - 검증: `npm run build` 성공 (build hash: `main.c42fb9a0.js`, warning only: `react-datepicker` critical dependency)
+- 2026-03-11: SPA 런타임 라우팅 복구 및 자동화 보완 진행
+  - Tomcat 확인: `GET /rays/ui/`, `GET /rays/ui/index.html`, `GET /rays/ui/main` -> `200`
+  - 원인 분리: 서버 다운이 아니라 `/ui` 라우팅/배포 반영 문제였음
+  - 자동화 보완:
+    - `run-all.ps1` 에 `TOMCAT_UI_NOT_READY` 분기 추가
+    - `UTF-8 Mojibake Check` preflight 추가 (`�|\?앹|\?몄|\?붿|\?덉|\?먮|\?대`)
+    - React dev server 실패를 `FRONTEND_DEVSERVER_START_FAIL` 로 분리
+    - dev server stdout/stderr 로그를 `automation/logs/devserver-*.log` 로 남기도록 보완
+    - 자동화 문서 생성/피드백 기록을 UTF-8(무BOM)으로 저장하도록 보완
+- 2026-03-11: 활성 승인 화면 한글 깨짐 복구
+  - 대상: `src/main/frontend/src/utils/approvalPopup.js`, `src/main/frontend/src/pages/approve/ApprovePanel.js`, `src/main/frontend/src/pages/approve/ApproveRequestPanel.js`
+  - 결과: `npm run build` 성공 (warning only: `react-datepicker` critical dependency)
 - 2026-03-10: 결재 문서 팝업 P0 전환 1차(브리지) 적용
   - React 라우트 추가: `/ui/approval/document/:docId`
   - 팝업 호출 변경: React 화면에서 직접 JSP POST 호출 대신 브리지 라우트 경유

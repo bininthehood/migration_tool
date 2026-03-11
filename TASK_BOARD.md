@@ -64,15 +64,15 @@ Agents must update this file as tasks are completed.
 [~] Configure production build output (robocopy 기반 수동 동기화 운영 중)
 [x] Verify Tomcat deployment (2026-03-09 `/rays/ui` 302, 주요 `/rays/ui/*` 200, `/rays/user/v1/sessionChecker` 200 확인)
 [x] Validate React static resource serving (2026-03-09 `main.5ae8cf5c.js`, `main.f5ccebab.css` 200 확인)
-[~] Harden migration automation capture target (2026-03-09 피드백: `run-all` 캡처 단계가 `localhost:3000` 의존, Tomcat 대상 `--baseUrl` 전달 경로 정리 필요)
-[ ] Add preflight checks for automation capture (포트 3000 리스닝, Playwright EPERM 안내, npm EACCES 재시도 가이드)
+[x] Harden migration automation capture target (2026-03-11 보완 + 검증 완료: `TOMCAT_UI_NOT_READY` 분기 추가, `npm.cmd` + `BROWSER=none` 기반 dev server 기동 로그 분리, Tomcat `:8080`/DEV `:3000` 대상 구분, `CaptureMode preset` Tomcat 런타임 PASS)
+[x] Add preflight checks for automation capture (2026-03-11 보완 완료: UTF-8/mojibake 검사 추가, Playwright `spawn EPERM` 명시 분리 기반 정리, 다음 세션용 `automation/next-session-manifest.json` compact 실행 포맷 추가)
 
 ---
 
 # Phase 6 - Cleanup and Optimization
 
 [x] Remove unused JSP pages (Batch-1 `dashboard/monitoring_bak.jsp` + Batch-2 기능 JSP 23건 제거 완료, 2026-03-09 운영 로그 회귀 확인(5xx=0) 완료)
-[~] Migrate approval document JSP popups (`approve/document/v1/format_00`, `format_01`) to React (2차: `docType 01/02/03/04/05` 네이티브 적용 + AP_USR_* 옵션 기반 대상자 필터 반영, 최종 런타임 QA 잔여)
+[~] Migrate approval document JSP popups (`approve/document/v1/format_00`, `format_01`) to React (2차: `docType 01/02/03/04/05` 네이티브 적용 + AP_USR_* 옵션 기반 대상자 필터 반영 + 브리지/목록 패널 한국어 문구 정리 + 취소 요청 `docType 06` 접근 로직 보정 완료, 최종 런타임 QA 잔여)
 [ ] Migrate download JSP screens (`view/download`, `view/download_agent`) to React
 [ ] Define error route cutover policy (`error/*` JSP -> `/ui/error/*`)
 [ ] Remove obsolete JS scripts

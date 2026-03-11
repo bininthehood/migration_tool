@@ -98,6 +98,21 @@ ORDER BY MENU_P_CD, MENU_ORDER, MENU_CD;
     - 실원인: Playwright `spawn EPERM` + DEV 서버 미기동 시 `localhost:3000` 연결 거부
     - 우회 검증: `--baseUrl http://localhost:8080` 직접 지정 캡처 성공, 오케스트레이션은 `CaptureMode none`으로 성공
 - 공통 점검 항목: 레거시 팝업 연동, 실패/예외 메시지, 권한 제어, 문구/레이아웃 미세 패리티
+- 2026-03-11 자동화 보완:
+  - `run-all.ps1` 가 `TOMCAT_NOT_READY` 와 `TOMCAT_UI_NOT_READY` 를 분리해 `/rays/login` 생존과 `/rays/ui/` 미배포를 구분함
+  - `UTF-8 Mojibake Check` preflight 추가: `�|\?앹|\?몄|\?붿|\?덉|\?먮|\?대` 패턴 발견 시 즉시 실패
+  - React dev server 자동 기동 시 `npm.cmd` + `BROWSER=none` + stdout/stderr 로그(`automation/logs/devserver-*.log`)를 사용
+  - 자동 문서/로그 생성은 UTF-8(무BOM)으로 저장하도록 보완
+  - Tomcat 기준 전체 오케스트레이션 PASS:
+    - `run-all.ps1 -CaptureMode preset -CaptureBaseUrl http://localhost:8080`
+    - `Tomcat Ready Check` + `Verify Session Contract` + `Frontend Compile Check` + `Run Capture` + `Sync Session Log` 성공
+    - 단, Playwright 캡처는 샌드박스 내부 실행 시 `spawn EPERM` 이 날 수 있어 권한 상승 실행 기준으로 운용
+- 2026-03-11 결재 문서 팝업 보완:
+  - `ApprovalDocumentBridgePage.js` 상단 깨진 주석 제거
+  - React 브리지/네이티브 팝업의 사용자 노출 문구를 한국어 기준으로 정리
+  - `npm run build` 성공으로 문법/인코딩 확인 완료
+  - `approvalPopup.js` 에서 취소 요청(`REQ_STATUS = X`)을 막지 않고 `docType 06` 읽기 전용 팝업으로 연결하도록 보정
+  - `ApprovePanel.js`, `ApproveRequestPanel.js` 의 목록/필터/상세 모달 한글 깨짐 정리
 
 3. 검증 루프 고정
 - 화면 단건:
@@ -110,8 +125,9 @@ ORDER BY MENU_P_CD, MENU_ORDER, MENU_CD;
 
 4. 문서 동기화 의무
 - `docs/project-docs/docs-main-qa-report.md`: 화면별 보정/검증 결과
-- `docs/project-docs/SESSION_WORKLOG_2026-03-03.md`: 변경 파일/명령/캡처
+- `docs/project-docs/SESSION_WORKLOG_*.md`: 변경 파일/명령/캡처
 - `docs-migration-backlog.md`: deep-link refresh / qa 상태 갱신
+- `automation/next-session-manifest.json`: 다음 세션 재실행용 compact 실행 요약
 
 5. 마일스톤 시점 배포 검증
 - `docs/project-docs/README_FRONTEND_BUILD_DEPLOY.md` 절차로 build -> copy -> publish

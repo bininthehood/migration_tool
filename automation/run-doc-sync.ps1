@@ -8,6 +8,15 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Write-Utf8NoBomFile([string]$Path, [string]$Content) {
+  $dir = Split-Path -Path $Path -Parent
+  if ($dir -and -not (Test-Path $dir)) {
+    New-Item -Path $dir -ItemType Directory -Force | Out-Null
+  }
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path, $Content, $enc)
+}
+
 $syncScript = Join-Path $ProjectRoot 'automation/skills/migration-doc-sync/scripts/sync-doc-stub.ps1'
 if (-not (Test-Path $syncScript)) {
   throw "Skill script not found: $syncScript"
@@ -28,7 +37,7 @@ if (-not $sessionLog) {
   $newSessionLog = Join-Path $movedLogDir ("SESSION_WORKLOG_{0}.md" -f (Get-Date -Format 'yyyy-MM-dd'))
   if (-not (Test-Path $newSessionLog)) {
     $header = "# Session Worklog`n`nAuto-created by automation/run-doc-sync.ps1 on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss K').`n"
-    Set-Content -Path $newSessionLog -Value $header -Encoding UTF8
+    Write-Utf8NoBomFile -Path $newSessionLog -Content $header
   }
   $sessionLog = $newSessionLog
 }

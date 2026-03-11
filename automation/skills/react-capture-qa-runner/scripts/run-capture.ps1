@@ -34,8 +34,17 @@ try {
 
   $npmArgs = @('run','capture:react','--') + $captureArgs
   Write-Host "Running: npm $($npmArgs -join ' ')"
-  & npm @npmArgs
-  if ($LASTEXITCODE -ne 0) { throw "capture command failed with code $LASTEXITCODE" }
+  $captureOutput = & npm @npmArgs 2>&1 | ForEach-Object { "$_" }
+  if ($captureOutput) {
+    $captureOutput | ForEach-Object { Write-Host $_ }
+  }
+  if ($LASTEXITCODE -ne 0) {
+    $detail = ($captureOutput -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($detail)) {
+      throw "capture command failed with code $LASTEXITCODE"
+    }
+    throw "capture command failed with code $LASTEXITCODE`n$detail"
+  }
 }
 finally {
   Pop-Location

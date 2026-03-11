@@ -121,10 +121,12 @@ if (-not (Test-Path $syncScript)) {
   $rootLogDetail = ''
   if ($rootLogs.Count -gt 0) {
     $rootLogDetail = "root logs=$($rootLogs.Count)"
+  } elseif ($movedLogs.Count -gt 0) {
+    $rootLogDetail = "root log omitted; docs/project-docs logs=$($movedLogs.Count)"
   } else {
     $rootLogDetail = 'no root session log; wrapper should pass -SessionLog'
   }
-  Add-Result ([ref]$results) 'doc-sync sessionlog autodetect (root)' ($rootLogs.Count -gt 0) $rootLogDetail $false
+  Add-Result ([ref]$results) 'doc-sync sessionlog autodetect (root)' (($rootLogs.Count -gt 0) -or ($movedLogs.Count -gt 0)) $rootLogDetail $false
 
   $movedLogDetail = ''
   if ($movedLogs.Count -gt 0) {
@@ -133,6 +135,32 @@ if (-not (Test-Path $syncScript)) {
     $movedLogDetail = 'missing docs/project-docs/SESSION_WORKLOG_*.md'
   }
   Add-Result ([ref]$results) 'doc-sync moved session log exists' ($movedLogs.Count -gt 0) $movedLogDetail $false
+}
+
+# 6) frontend session/login/logout guard policy
+$loginPagePath = Resolve-ProjectPath 'src/main/frontend/src/pages/login/LoginPage.js'
+$mainPagePath = Resolve-ProjectPath 'src/main/frontend/src/pages/main/MainPage.js'
+if (-not (Test-Path $loginPagePath)) {
+  Add-Result ([ref]$results) 'login page exists for session guard' $false $loginPagePath
+} else {
+  $loginText = Get-Content -Path $loginPagePath -Raw
+  $hasSessionChecker = $loginText -match '/user/v1/sessionChecker'
+  $hasSessionInfo = $loginText -match '/user/v1/sessionInfo'
+  $hasRequiredCheck = $loginText -match 'hasRequired'
+  Add-Result ([ref]$results) 'login session guard uses sessionChecker' $hasSessionChecker 'sessionChecker call present'
+  Add-Result ([ref]$results) 'login session guard validates sessionInfo' ($hasSessionInfo -and $hasRequiredCheck) 'sessionInfo + required fields check present'
+}
+
+if (-not (Test-Path $mainPagePath)) {
+  Add-Result ([ref]$results) 'main page exists for logout guard' $false $mainPagePath
+} else {
+  $mainText = Get-Content -Path $mainPagePath -Raw
+  $hasLogoutApiCall = $mainText -match '/user/v1/logout'
+  $hasLoginRedirect = $mainText -match "toAppUrl\(contextPath,\s*'/login'\)"
+  $hasDirectLogoutHref = $mainText -match "window\.location\.(href|assign)\s*=\s*toAppUrl\(contextPath,\s*'/user/v1/logout'\)"
+  Add-Result ([ref]$results) 'main logout calls backend api' $hasLogoutApiCall 'logout API call present'
+  Add-Result ([ref]$results) 'main logout redirects to login page' $hasLoginRedirect 'login redirect present after logout'
+  Add-Result ([ref]$results) 'main logout avoids direct logout href navigation' (-not $hasDirectLogoutHref) 'no direct browser navigation to /user/v1/logout'
 }
 
 $results | Format-Table -AutoSize

@@ -8,6 +8,13 @@ param(
 $backlog = Join-Path $ProjectRoot 'docs-migration-backlog.md'
 $endpointMap = Join-Path $ProjectRoot 'ENDPOINT_MAP.md'
 
+function Write-Utf8NoBomFile([string]$Path, [string]$Content) {
+  $parent = Split-Path $Path -Parent
+  if ($parent -and -not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+  $enc = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($Path, $Content, $enc)
+}
+
 $backlogHint = ''
 if (Test-Path $backlog) {
   $escaped = [regex]::Escape($LegacyUrl)
@@ -49,9 +56,7 @@ $md = @"
 "@
 
 if ($OutputPath) {
-  $parent = Split-Path $OutputPath -Parent
-  if ($parent -and -not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-  Set-Content -Path $OutputPath -Value $md -Encoding UTF8
+  Write-Utf8NoBomFile -Path $OutputPath -Content $md
   Write-Host "Wrote checklist: $OutputPath"
 } else {
   $md
