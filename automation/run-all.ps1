@@ -15,8 +15,10 @@ param(
   [switch]$LegacyMode,
   [switch]$InstallFrontendDeps,
   [switch]$DisableAutoInstallFrontendDeps,
+  [int]$FrontendInstallTimeoutSec = 900,
   [switch]$DisableAutoInstallPlaywrightBrowsers,
   [switch]$SkipFrontendCompileCheck,
+  [int]$FrontendBuildTimeoutSec = 1800,
   [switch]$SkipSessionContractCheck,
   [switch]$SkipFrontendCheck,
   [switch]$GitCommit,
@@ -188,6 +190,70 @@ function Test-HttpReady([string]$Url) {
   }
 }
 
+function ConvertTo-ProcessArgumentString {
+  param(
+    [Parameter(Mandatory = $true)][string[]]$ArgumentList
+  )
+
+  return ($ArgumentList | ForEach-Object {
+    if ($_ -match '[\s"]') {
+      '"' + ($_ -replace '"', '\"') + '"'
+    } else {
+      $_
+    }
+  }) -join ' '
+}
+
+function Invoke-ProcessWithTimeout {
+  param(
+    [Parameter(Mandatory = $true)][string]$FilePath,
+    [Parameter(Mandatory = $true)][string[]]$ArgumentList,
+    [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+    [Parameter(Mandatory = $true)][int]$TimeoutSec,
+    [Parameter(Mandatory = $true)][string]$StepLabel
+  )
+
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $FilePath
+  $psi.Arguments = ConvertTo-ProcessArgumentString -ArgumentList $ArgumentList
+  $psi.WorkingDirectory = $WorkingDirectory
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.CreateNoWindow = $true
+
+  $proc = New-Object System.Diagnostics.Process
+  $proc.StartInfo = $psi
+
+  try {
+    $null = $proc.Start()
+    if (-not $proc.WaitForExit($TimeoutSec * 1000)) {
+      try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
+      $stdoutTail = ''
+      $stderrTail = ''
+      try { $stdoutTail = ($proc.StandardOutput.ReadToEnd() -split "`r?`n" | Select-Object -Last 20) -join ' | ' } catch {}
+      try { $stderrTail = ($proc.StandardError.ReadToEnd() -split "`r?`n" | Select-Object -Last 20) -join ' | ' } catch {}
+      throw "$StepLabel timed out after ${TimeoutSec}s. stdout=[$stdoutTail] stderr=[$stderrTail]"
+    }
+
+    $null = $proc.WaitForExit()
+    $proc.Refresh()
+    $exitCode = $proc.ExitCode
+
+    $stdout = $proc.StandardOutput.ReadToEnd()
+    $stderr = $proc.StandardError.ReadToEnd()
+
+    return [pscustomobject]@{
+      ExitCode = $exitCode
+      StdOut = $stdout
+      StdErr = $stderr
+    }
+  }
+  finally {
+    $proc.Dispose()
+  }
+}
+
 function Get-ImprovementSuggestions([string]$ResolvedLogDir, [int]$Window) {
   if (-not (Test-Path $ResolvedLogDir)) { return @() }
   $files = Get-ChildItem -Path $ResolvedLogDir -File -Filter 'run-*.json' |
@@ -330,8 +396,8 @@ $suggestionLines
   Append-Utf8NoBomFile -Path $resolvedFeedback -Content $entry
 
   $manifestPath = Join-Path $ProjectRoot 'automation/next-session-manifest.json'
-  $recommendedCommand = "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $ProjectRoot -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -DisableAutoInstallFrontendDeps"
-  $fallbackCommand = "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $ProjectRoot -CaptureMode none -DisableAutoInstallFrontendDeps"
+  $recommendedCommand = "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $ProjectRoot -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -FrontendBuildTimeoutSec $FrontendBuildTimeoutSec"
+  $fallbackCommand = "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $ProjectRoot -CaptureMode none -FrontendBuildTimeoutSec $FrontendBuildTimeoutSec"
   $latestFailedStep = $failedSteps | Select-Object -First 1
   $manifest = [ordered]@{
     format_version = 1
@@ -611,7 +677,12 @@ try {
 
       $nodeModulesDir = Join-Path $frontendDir 'node_modules'
       $playwrightModule = Join-Path $nodeModulesDir 'playwright'
+      $reactScriptsModule = Join-Path $nodeModulesDir 'react-scripts'
+      $reactScriptsBin = Join-Path $nodeModulesDir '.bin\react-scripts.cmd'
       $needInstall = $InstallFrontendDeps -or -not (Test-Path $nodeModulesDir)
+      if (-not $needInstall -and ((-not (Test-Path $reactScriptsModule)) -or (-not (Test-Path $reactScriptsBin)))) {
+        $needInstall = $true
+      }
       if (-not $needInstall -and $CaptureMode -ne 'none' -and -not (Test-Path $playwrightModule)) {
         $needInstall = $true
       }
@@ -622,8 +693,10 @@ try {
       $script:executedCommands += $cmd
       Push-Location $frontendDir
       try {
-        & npm install
-        if ($LASTEXITCODE -ne 0) { throw "frontend deps install failed: npm install exit $LASTEXITCODE" }
+        $result = Invoke-ProcessWithTimeout -FilePath 'cmd.exe' -ArgumentList @('/c', 'npm install') -WorkingDirectory $frontendDir -TimeoutSec $FrontendInstallTimeoutSec -StepLabel 'frontend dependency install'
+        if ($result.ExitCode -ne 0) {
+          throw "frontend deps install failed: npm install exit $($result.ExitCode)"
+        }
       }
       finally {
         Pop-Location
@@ -664,8 +737,8 @@ try {
       Push-Location $frontendDir
       try {
         $env:BUILD_PATH = $buildPath
-        & npm run build
-        if ($LASTEXITCODE -ne 0) { throw "frontend compile check failed: npm run build exit $LASTEXITCODE" }
+        $result = Invoke-ProcessWithTimeout -FilePath 'cmd.exe' -ArgumentList @('/c', "set BUILD_PATH=$buildPath && npm run build") -WorkingDirectory $frontendDir -TimeoutSec $FrontendBuildTimeoutSec -StepLabel 'frontend compile check'
+        if ($result.ExitCode -ne 0) { throw "frontend compile check failed: npm run build exit $($result.ExitCode)" }
       }
       finally {
         Remove-Item -Recurse -Force $buildPath -ErrorAction SilentlyContinue
@@ -882,8 +955,8 @@ try {
       $script:executedCommands += $cmd
       Push-Location $frontend
       try {
-        & npm run build
-        if ($LASTEXITCODE -ne 0) { throw "npm run build failed: $LASTEXITCODE" }
+        $result = Invoke-ProcessWithTimeout -FilePath 'cmd.exe' -ArgumentList @('/c', 'npm run build') -WorkingDirectory $frontend -TimeoutSec $FrontendBuildTimeoutSec -StepLabel 'build frontend'
+        if ($result.ExitCode -ne 0) { throw "npm run build failed: $($result.ExitCode)" }
       }
       finally {
         Pop-Location

@@ -12,7 +12,7 @@
     "preferred_flow":  {
                            "id":  "tomcat_runtime_capture",
                            "reason":  "Validated on 2026-03-11 after restoring session-contract verification and frontend dependencies.",
-                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2_test -TomcatControlAction restart -MigrateBatch all -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -DisableAutoInstallFrontendDeps -SkipReactFunctionCommenting",
+                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2_test -TomcatControlAction restart -MigrateBatch all -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -FrontendBuildTimeoutSec 1800 -SkipReactFunctionCommenting",
                            "requires_elevation":  true,
                            "base_url":  "http://localhost:8080",
                            "context_path":  "/rays",
@@ -30,7 +30,7 @@
                        },
     "fallback_flow":  {
                           "id":  "no_capture_validation",
-                          "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2_test -TomcatControlAction restart -MigrateBatch all -CaptureMode none -DisableAutoInstallFrontendDeps -SkipReactFunctionCommenting",
+                          "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2_test -TomcatControlAction restart -MigrateBatch all -CaptureMode none -FrontendBuildTimeoutSec 1800 -SkipReactFunctionCommenting",
                           "use_when":  "Use when browser capture permission (EPERM) or Playwright launch constraints block preset execution."
                       },
     "environment":  {
@@ -60,6 +60,8 @@
                               "Playwright capture is reliable when executed with elevated permission.",
                               "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
                               "Tomcat readiness and /ui readiness are handled as separate states.",
+                              "Missing frontend dependencies such as react-scripts are auto-recovered by the dependency step unless DisableAutoInstallFrontendDeps is explicitly set.",
+                              "Frontend build timeout is extended to 1800 seconds by default to avoid false retries on slower environments.",
                               "SkipReactFunctionCommenting is currently required only when the target project workspace does not include automation/annotate-react-functions.ps1."
                           ],
     "post_run_updates":  [
