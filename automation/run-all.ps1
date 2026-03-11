@@ -19,6 +19,11 @@ param(
   [switch]$SkipFrontendCompileCheck,
   [switch]$SkipSessionContractCheck,
   [switch]$SkipFrontendCheck,
+  [switch]$GitCommit,
+  [string]$GitCommitMessage = '',
+  [string]$GitRemoteUrl = '',
+  [string]$GitDefaultBranch = 'main',
+  [switch]$GitInitIfMissing,
   [string]$TomcatBaseUrl = 'http://localhost:8080',
   [string]$TomcatContextPath = '/rays',
   [string]$TomcatHealthPath = '/ui/',
@@ -409,6 +414,35 @@ $script:autoLegacyMode = $false
 $script:runStartedAt = Get-Date
 $script:runId = Get-Date -Format 'yyyyMMdd-HHmmss'
 $script:runStatus = 'success'
+
+$gitCommitScript = Join-Path $ProjectRoot 'automation/git-commit.ps1'
+$gitConfigPath = Join-Path $ProjectRoot 'automation/git-automation-config.json'
+$gitConfig = $null
+if (Test-Path $gitConfigPath) {
+  try {
+    $gitConfig = Get-Content -Path $gitConfigPath -Raw | ConvertFrom-Json
+  }
+  catch {
+    Write-Warning "Unable to parse git automation config: $gitConfigPath"
+  }
+}
+$gitCommitEnabled = [bool]$GitCommit
+if (-not $gitCommitEnabled -and $gitConfig -and $gitConfig.enabledByDefault) {
+  $gitCommitEnabled = [bool]$gitConfig.enabledByDefault
+}
+if ([string]::IsNullOrWhiteSpace($GitRemoteUrl) -and $gitConfig -and $gitConfig.remoteUrl) {
+  $GitRemoteUrl = [string]$gitConfig.remoteUrl
+}
+if ([string]::IsNullOrWhiteSpace($GitCommitMessage) -and $gitConfig -and $gitConfig.commitMessageTemplate) {
+  $GitCommitMessage = [string]$gitConfig.commitMessageTemplate
+}
+if (([string]::IsNullOrWhiteSpace($GitDefaultBranch) -or $GitDefaultBranch -eq 'main') -and $gitConfig -and $gitConfig.defaultBranch) {
+  $GitDefaultBranch = [string]$gitConfig.defaultBranch
+}
+$gitInitIfMissingEnabled = [bool]$GitInitIfMissing
+if (-not $gitInitIfMissingEnabled -and $gitConfig -and $gitConfig.initIfMissing) {
+  $gitInitIfMissingEnabled = [bool]$gitConfig.initIfMissing
+}
 
 $validateScript = Join-Path $ProjectRoot 'automation/validate-skill-integration.ps1'
 $docSyncScript = Join-Path $ProjectRoot 'automation/run-doc-sync.ps1'
@@ -864,6 +898,8 @@ try {
         'automation/annotate-react-functions.ps1',
         'automation/run-screen-migration.ps1',
         'automation/migration-screen-map.json',
+        'automation/git-commit.ps1',
+        'automation/git-automation-config.json',
         'automation/tomcat-control.ps1',
         'automation/verify-session-contract.ps1',
         'automation/validate-skill-integration.ps1',
@@ -900,6 +936,42 @@ catch {
 }
 finally {
   Write-FeedbackArtifacts
+  if ($script:runStatus -eq 'success' -and $gitCommitEnabled) {
+    if (-not (Test-Path $gitCommitScript)) {
+      Write-Warning "Git commit step skipped: missing $gitCommitScript"
+    }
+    else {
+      try {
+        Write-Host ""
+        Write-Host '== Git Commit =='
+        $resolvedGitCommitMessage = $GitCommitMessage
+        if (-not [string]::IsNullOrWhiteSpace($resolvedGitCommitMessage)) {
+          $resolvedGitCommitMessage = $resolvedGitCommitMessage.Replace('{run_id}', $script:runId)
+        }
+
+        $gitArgs = @(
+          '-ExecutionPolicy', 'Bypass',
+          '-File', $gitCommitScript,
+          '-ProjectRoot', $ProjectRoot,
+          '-RemoteUrl', $GitRemoteUrl,
+          '-DefaultBranch', $GitDefaultBranch,
+          '-CommitMessage', $resolvedGitCommitMessage,
+          '-RunId', $script:runId
+        )
+        if ($gitInitIfMissingEnabled) {
+          $gitArgs += '-InitIfMissing'
+        }
+
+        & powershell @gitArgs
+        if ($LASTEXITCODE -ne 0) {
+          Write-Warning "Git commit step failed with exit code $LASTEXITCODE"
+        }
+      }
+      catch {
+        Write-Warning "Git commit step failed: $($_.Exception.Message)"
+      }
+    }
+  }
 }
 
 Write-Host ""

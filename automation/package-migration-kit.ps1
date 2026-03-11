@@ -2,8 +2,7 @@ param(
   [string]$ProjectRoot = (Get-Location).Path,
   [string]$OutputDir = 'dist/migration-kit',
   [string]$PackageName = '',
-  [switch]$IncludeSessionLog,
-  [switch]$Minimal
+  [switch]$IncludeSessionLog
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,9 +46,13 @@ Ensure-Dir $resolvedOutputDir
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 if ([string]::IsNullOrWhiteSpace($PackageName)) {
-  $suffix = if ($Minimal) { 'minimal' } else { 'full' }
-  $PackageName = "migration-automation-kit-$suffix-$stamp"
+  $PackageName = "migration-automation-kit-$stamp"
 }
+
+# Keep only the latest generated kit set in dist/migration-kit.
+Get-ChildItem -Path $resolvedOutputDir -Force -ErrorAction SilentlyContinue |
+  Where-Object { $_.Name -like 'migration-automation-kit-*' } |
+  Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 $stagingDir = Join-Path $resolvedOutputDir "$PackageName-staging"
 if (Test-Path $stagingDir) {
@@ -70,6 +73,8 @@ Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/validate-skill-integ
 Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/bootstrap-frontend.ps1')
 Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/install-migration-kit.ps1')
 Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/package-migration-kit.ps1')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/git-commit.ps1')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/git-automation-config.json')
 Add-PathIfExists $items (Join-Path $ProjectRoot 'automation/skills')
 
 # Frontend runtime essentials (must exist in shared kit).
@@ -80,31 +85,17 @@ Add-PathIfExists $items (Join-Path $ProjectRoot 'src/main/frontend/src')
 Add-PathIfExists $items (Join-Path $ProjectRoot 'src/main/frontend/scripts')
 Add-PathIfExists $items (Join-Path $ProjectRoot 'src/main/webapp/ui')
 
-if (-not $Minimal) {
-  # Root docs
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'AGENTS.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'WORKFLOW.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'LATEST_STATE.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'TASK_BOARD.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'docs-migration-backlog.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot '.gitignore')
+# Root docs
+Add-PathIfExists $items (Join-Path $ProjectRoot 'AGENTS.md')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'WORKFLOW.md')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'LATEST_STATE.md')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'TASK_BOARD.md')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'docs-migration-backlog.md')
+Add-PathIfExists $items (Join-Path $ProjectRoot '.gitignore')
 
-  # Docs folders
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'docs/automation/MD_CLASSIFICATION.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'docs/project-docs')
-} else {
-  # Minimal mode still includes manifest required docs so validate-skill-integration can pass.
-  $manifestRequired = Get-ManifestRequiredPaths (Join-Path $ProjectRoot 'automation/project-doc-manifest.yml')
-  foreach ($doc in $manifestRequired) {
-    Add-PathIfExists $items (Join-Path $ProjectRoot $doc)
-  }
-
-  # Plus a small set of execution guidance docs.
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'AGENTS.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'WORKFLOW.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'README.md')
-  Add-PathIfExists $items (Join-Path $ProjectRoot 'docs/project-docs/README_FRONTEND_BUILD_DEPLOY.md')
-}
+# Docs folders
+Add-PathIfExists $items (Join-Path $ProjectRoot 'docs/automation/MD_CLASSIFICATION.md')
+Add-PathIfExists $items (Join-Path $ProjectRoot 'docs/project-docs')
 
 if (-not $IncludeSessionLog) {
   # Exclude session worklogs by deleting them in staging later.
@@ -139,7 +130,6 @@ $manifest += "Package: $PackageName"
 $manifest += "CreatedAt: $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz'))"
 $manifest += "ProjectRoot: $ProjectRoot"
 $manifest += "IncludeSessionLog: $([bool]$IncludeSessionLog)"
-$manifest += "Minimal: $([bool]$Minimal)"
 $manifest += ''
 $manifest += 'Included Paths:'
 $manifest += (Get-ChildItem -Path $stagingDir -Recurse | ForEach-Object {

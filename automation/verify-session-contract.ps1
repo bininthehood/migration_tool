@@ -8,61 +8,82 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function Read-ResponseText([object]$Response) {
-  if ($null -eq $Response) { return '' }
-  if ($Response.Content -is [string]) { return $Response.Content }
-  if ($Response.Content -is [byte[]]) { return [System.Text.Encoding]::UTF8.GetString($Response.Content) }
-  return [string]$Response.Content
+function Invoke-JsonRequest {
+  param(
+    [Parameter(Mandatory = $true)][string]$Method,
+    [Parameter(Mandatory = $true)][string]$Url,
+    [Microsoft.PowerShell.Commands.WebRequestSession]$Session,
+    [hashtable]$Headers,
+    [string]$Body = ''
+  )
+
+  $invokeParams = @{
+    Uri         = $Url
+    Method      = $Method
+    WebSession  = $Session
+    UseBasicParsing = $true
+    TimeoutSec  = 15
+  }
+  if ($Headers) { $invokeParams.Headers = $Headers }
+  if ($Method -ne 'GET') { $invokeParams.Body = $Body }
+
+  $response = Invoke-WebRequest @invokeParams
+  $content = $response.Content
+  if ($content -is [byte[]]) {
+    $content = [System.Text.Encoding]::UTF8.GetString($content)
+  }
+  return ($content | ConvertFrom-Json)
 }
 
-function Ensure-ResultCode([object]$Payload, [string]$ApiName) {
-  if ($null -eq $Payload) {
-    throw "$ApiName returned empty payload"
-  }
-  $resultCode = -9999
-  try { $resultCode = [int]$Payload.resultCode } catch { $resultCode = -9999 }
+function Assert-ResultCodeZero {
+  param(
+    [Parameter(Mandatory = $true)][string]$StepName,
+    [Parameter(Mandatory = $true)]$Payload
+  )
+
+  $resultCode = [int]($Payload.resultCode)
   if ($resultCode -ne 0) {
-    throw "$ApiName resultCode=$resultCode"
+    $resultMessage = [string]$Payload.resultMessage
+    throw "$StepName resultCode=$resultCode resultMessage=$resultMessage"
   }
 }
 
 $baseUrl = $TomcatBaseUrl.TrimEnd('/')
-$ctx = $TomcatContextPath
-if (-not $ctx.StartsWith('/')) { $ctx = "/$ctx" }
+$contextPath = $TomcatContextPath.TrimEnd('/')
+$rootUrl = "$baseUrl$contextPath"
 
-$policyCheckUrl = "$baseUrl$ctx/user/v1/policyCheck"
-$sessionAliveUrl = "$baseUrl$ctx/user/v1/sessionAlive"
-$sessionInfoUrl = "$baseUrl$ctx/user/v1/sessionInfo"
+Write-Host "[session-contract] base=$rootUrl"
 
-$webSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
-$loginBody = "userId=$([uri]::EscapeDataString($User))&userPwd=$([uri]::EscapeDataString($Password))&userLang=ko"
-$loginResponse = Invoke-WebRequest -UseBasicParsing -Uri $policyCheckUrl -Method POST -WebSession $webSession -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' -Body $loginBody
-$loginText = Read-ResponseText -Response $loginResponse
-$loginJson = $loginText | ConvertFrom-Json
-Ensure-ResultCode -Payload $loginJson -ApiName 'policyCheck'
+# Prime the session cookies from the login page before API calls.
+$null = Invoke-WebRequest -Uri "$rootUrl/login" -Method Get -WebSession $session -UseBasicParsing -TimeoutSec 15
 
-$aliveResponse = Invoke-WebRequest -UseBasicParsing -Uri $sessionAliveUrl -Method POST -WebSession $webSession -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' -Body ''
-$aliveText = Read-ResponseText -Response $aliveResponse
-$aliveJson = $aliveText | ConvertFrom-Json
-Ensure-ResultCode -Payload $aliveJson -ApiName 'sessionAlive'
-
-$sessionResponse = Invoke-WebRequest -UseBasicParsing -Uri $sessionInfoUrl -Method POST -WebSession $webSession -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' -Body ''
-$sessionText = Read-ResponseText -Response $sessionResponse
-$sessionJson = $sessionText | ConvertFrom-Json
-Ensure-ResultCode -Payload $sessionJson -ApiName 'sessionInfo'
-
-$sessionData = $sessionJson.sessionData
-if ($null -eq $sessionData) {
-  throw 'sessionInfo payload missing sessionData'
+$formHeaders = @{
+  'Content-Type' = 'application/x-www-form-urlencoded; charset=UTF-8'
 }
 
-$requiredKeys = @('siteCode', 'levelCode', 'userId')
-foreach ($key in $requiredKeys) {
-  $value = [string]$sessionData.$key
+$policyBody = "userId=$([uri]::EscapeDataString($User))&userPwd=$([uri]::EscapeDataString($Password))&userLang=ko"
+$policy = Invoke-JsonRequest -Method 'POST' -Url "$rootUrl/user/v1/policyCheck" -Session $session -Headers $formHeaders -Body $policyBody
+Assert-ResultCodeZero -StepName 'policyCheck' -Payload $policy
+
+$alive = Invoke-JsonRequest -Method 'POST' -Url "$rootUrl/user/v1/sessionAlive" -Session $session -Headers $formHeaders -Body ''
+Assert-ResultCodeZero -StepName 'sessionAlive' -Payload $alive
+
+$info = Invoke-JsonRequest -Method 'POST' -Url "$rootUrl/user/v1/sessionInfo" -Session $session -Headers $formHeaders -Body ''
+Assert-ResultCodeZero -StepName 'sessionInfo' -Payload $info
+
+$sessionData = $info.sessionData
+if (-not $sessionData) {
+  throw 'sessionInfo.sessionData missing'
+}
+
+$requiredFields = @('siteCode', 'levelCode', 'userId')
+foreach ($field in $requiredFields) {
+  $value = [string]$sessionData.$field
   if ([string]::IsNullOrWhiteSpace($value) -or $value -eq 'null') {
-    throw "sessionInfo.sessionData.$key is missing"
+    throw "sessionInfo.sessionData.$field missing"
   }
 }
 
-Write-Host "Session contract check passed: userId=$($sessionData.userId), siteCode=$($sessionData.siteCode), levelCode=$($sessionData.levelCode)"
+Write-Host "[session-contract] PASS"

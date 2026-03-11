@@ -13,20 +13,26 @@ Preferred command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 `
-  -ProjectRoot C:\Users\rays\ArcFlow_Webv1.2_test4 `
+  -ProjectRoot <legacy-project-root> `
+  -TomcatControlAction restart `
+  -MigrateBatch all `
   -CaptureMode preset `
   -CapturePreset all `
   -CaptureBaseUrl http://localhost:8080 `
-  -DisableAutoInstallFrontendDeps
+  -DisableAutoInstallFrontendDeps `
+  -SkipReactFunctionCommenting
 ```
 
 Fallback command:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 `
-  -ProjectRoot C:\Users\rays\ArcFlow_Webv1.2_test4 `
+  -ProjectRoot <legacy-project-root> `
+  -TomcatControlAction restart `
+  -MigrateBatch all `
   -CaptureMode none `
-  -DisableAutoInstallFrontendDeps
+  -DisableAutoInstallFrontendDeps `
+  -SkipReactFunctionCommenting
 ```
 
 Operational notes:
@@ -60,6 +66,7 @@ Keep session startup deterministic and low-overhead for AI execution while prese
    - `src/main/java/com/rays/app/view/controller/ViewController.java`
 3. Check UTF-8 and mojibake risk first.
 4. Use `automation/next-session-manifest.json` as the command source of truth.
+5. Treat git checkout/pull in the target project root as the default delivery path.
 
 ## Main Pipeline
 
@@ -75,8 +82,8 @@ Keep session startup deterministic and low-overhead for AI execution while prese
    - `docs-migration-backlog.md`
    - `docs/project-docs/SESSION_WORKLOG_*.md`
    - `automation/next-session-manifest.json`
-6. Repackage:
-   - `powershell -ExecutionPolicy Bypass -File automation/package-migration-kit.ps1 -ProjectRoot <root>`
+6. Optional package:
+   - Only when offline delivery is required, run `powershell -ExecutionPolicy Bypass -File automation/package-migration-kit.ps1 -ProjectRoot <root>`
 
 ## Verification Rules
 
@@ -97,4 +104,4 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 - Latest runtime log: `automation/logs/run-*.json`
 - Automation feedback: `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md`
 - Next session compact manifest: `automation/next-session-manifest.json`
-- Package output: `dist/migration-kit`
+- Package output: `dist/migration-kit` only for offline handoff

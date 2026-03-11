@@ -147,11 +147,10 @@
 영문 요약: Build CRA, copy to webapp/ui, republish Tomcat.
 
 ## 팀 공유용 실행 프로세스 (권장)
-- 목적: 팀원은 명령 블록을 직접 공유받기보다, migration-kit와 AI 지시문으로 동일 프로세스를 실행한다.
+- 목적: 팀원은 명령 블록을 직접 공유받기보다, 대상 legacy 프로젝트 루트에 자동화 저장소를 직접 checkout/pull 한 뒤 AI 지시문으로 동일 프로세스를 실행한다.
 
-1. 팀원에게 최신 `migration-kit` zip 공유
-2. 팀원이 새로 checkout 받은 legacy 프로젝트 루트에 zip 압축 해제
-3. 팀원이 프로젝트 루트에서 AI에 아래 지시문 전달
+1. 팀원이 대상 legacy 프로젝트 루트에 이 자동화 저장소 최신본을 checkout 또는 pull 한다.
+2. 팀원이 프로젝트 루트에서 AI에 아래 지시문 전달
 
 추천 AI 지시문:
 - `AGENTS.md를 읽고 팀 공유용 실행 프로세스대로 migration automation을 끝까지 실행해줘.`
@@ -159,7 +158,7 @@
 
 운영 규칙:
 - 프로젝트별 화면 매핑이 다르면 `automation/migration-screen-map.json`을 먼저 수정한다.
-- zip 버전은 항상 최신 타임스탬프 산출물로 교체 공유한다.
+- 기본 배포는 git checkout/pull 이고, zip 패키지는 오프라인 전달이 필요한 경우에만 사용한다.
 - 실행 결과는 `automation/logs/run-*.json` 기준으로 성공/실패를 판단한다.
 - `run-all.ps1`에서 화면 이관(`-MigrateScreen`/`-MigrateBatch`)을 수행하면 React 함수 주석 자동화 단계가 기본 실행된다. (옵션: `-SkipReactFunctionCommenting`)
 - 자동 생성 함수 주석은 **한글 필수**로 작성한다.
@@ -168,8 +167,8 @@
 자동화 종료 후 필수 후속 작업(Post-Run):
 - `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md`와 최신 `automation/logs/run-*.json`을 확인해 실패 코드/우회 조치를 정리한다.
 - 이번 실행 피드백을 `LATEST_STATE.md`, `TASK_BOARD.md`, `docs-migration-backlog.md`에 즉시 반영한다.
-- `automation/package-migration-kit.ps1`로 full/minimal 패키지를 재생성해 `dist/migration-kit` 최신본으로 교체한다.
-- `dist/migration-kit`에는 최신 타임스탬프 산출물 1세트만 남기고 구버전/더미 산출물은 정리한다.
+- 오프라인 전달이 필요한 경우에만 `automation/package-migration-kit.ps1`로 단일 migration-kit 패키지를 재생성한다.
+- `dist/migration-kit`는 기본 운영 산출물이 아니며, 생성했다면 최신 타임스탬프 산출물 1세트만 유지한다.
 
 ## 검증 체크리스트
 - `GET /rays/ui` -> `/rays/ui/`로 redirect 후 200
