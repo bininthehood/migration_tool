@@ -1,6 +1,6 @@
 {
     "format_version":  1,
-    "updated_at":  "2026-03-11T17:29:40+09:00",
+    "updated_at":  "2026-03-12T14:02:00.0503511+09:00",
     "phase":  "Transition",
     "purpose":  "Compact execution manifest for rerunning the same automation test next session.",
     "read_order":  [
@@ -11,8 +11,8 @@
                    ],
     "preferred_flow":  {
                            "id":  "tomcat_runtime_capture",
-                           "reason":  "Validated on 2026-03-11 after restoring session-contract verification and frontend dependencies.",
-                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2_test -TomcatControlAction restart -MigrateBatch all -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -FrontendBuildTimeoutSec 1800 -SkipReactFunctionCommenting",
+                           "reason":  "Validated on 2026-03-11 as the most stable path.",
+                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2\\migration_tool -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -FrontendBuildTimeoutSec 1800",
                            "requires_elevation":  true,
                            "base_url":  "http://localhost:8080",
                            "context_path":  "/rays",
@@ -24,14 +24,14 @@
                                                     "Sync Session Log success"
                                                 ],
                            "expected_runtime":  {
-                                                    "automation_only_sec":  119.7,
+                                                    "automation_only_sec":  70.26,
                                                     "practical_elapsed_minutes":  "10-20"
                                                 }
                        },
     "fallback_flow":  {
                           "id":  "no_capture_validation",
-                          "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2_test -TomcatControlAction restart -MigrateBatch all -CaptureMode none -FrontendBuildTimeoutSec 1800 -SkipReactFunctionCommenting",
-                          "use_when":  "Use when browser capture permission (EPERM) or Playwright launch constraints block preset execution."
+                          "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2\\migration_tool -CaptureMode none -FrontendBuildTimeoutSec 1800",
+                          "use_when":  "Use when browser capture permission (EPERM) or GUI constraints block preset execution."
                       },
     "environment":  {
                         "tomcat_base_url":  "http://localhost:8080",
@@ -41,34 +41,31 @@
                         "encoding":  "UTF-8 without BOM"
                     },
     "latest_run":  {
-                       "run_id":  "20260311-172720",
-                       "status":  "success",
-                       "log":  "automation/logs/run-20260311-172720.json",
-                       "duration_sec":  119.7,
-                       "failed_step":  "",
-                       "failed_code":  ""
+                       "run_id":  "20260312-140133",
+                       "status":  "failed",
+                       "log":  "automation/logs/run-20260312-140133.json",
+                       "duration_sec":  26.34,
+                       "failed_step":  "Verify Session Contract",
+                       "failed_code":  "SESSION_CONTRACT_FAIL"
                    },
     "validated_capture_reference":  {
-                                        "run_id":  "20260311-172720",
+                                        "run_id":  "20260311-145541",
                                         "status":  "success",
-                                        "log":  "automation/logs/run-20260311-172720.json",
+                                        "log":  "automation/logs/run-20260311-145541.json",
                                         "capture_mode":  "preset",
                                         "capture_base_url":  "http://localhost:8080",
-                                        "duration_sec":  119.7
+                                        "duration_sec":  70.26
                                     },
     "known_constraints":  [
                               "Playwright capture is reliable when executed with elevated permission.",
                               "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
-                              "Tomcat readiness and /ui readiness are handled as separate states.",
-                              "Missing frontend dependencies such as react-scripts are auto-recovered by the dependency step unless DisableAutoInstallFrontendDeps is explicitly set.",
-                              "Frontend build timeout is extended to 1800 seconds by default to avoid false retries on slower environments.",
-                              "SkipReactFunctionCommenting is currently required only when the target project workspace does not include automation/annotate-react-functions.ps1."
+                              "Tomcat readiness and /ui readiness are handled as separate states."
                           ],
     "post_run_updates":  [
                              "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md",
                              "LATEST_STATE.md",
                              "TASK_BOARD.md",
                              "docs-migration-backlog.md",
-                             "automation/next-session-manifest.json"
+                             "dist/migration-kit"
                          ]
 }
