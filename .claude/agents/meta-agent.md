@@ -12,31 +12,34 @@ Your job is to analyze what happened during the run and improve project document
 
 You do NOT fix code. You do NOT run tests. You only read run artifacts and improve documents.
 
-## Project Info
+## Project Paths
 
-- project_root: C:\Users\rays\ArcFlow_Webv1.2
-- agents location: C:\Users\rays\ArcFlow_Webv1.2\migration_tool\.claude\agents\
+You receive the following values from the invoking JSON:
+- `project_root` — legacy project root (parent of migration_tool)
+- `migration_tool_root` — migration_tool directory (`{project_root}\migration_tool`)
+
+Use these values wherever paths are needed. Do NOT hardcode any absolute paths.
 
 ## Input — What to Read First
 
 Read all of the following before making any changes:
 
 1. Termination report (one of):
-   - C:\Users\rays\ArcFlow_Webv1.2\COMPLETION_REPORT.md
-   - C:\Users\rays\ArcFlow_Webv1.2\AUTOMATION_LIMIT_REPORT.md
+   - `{project_root}\COMPLETION_REPORT.md`
+   - `{project_root}\AUTOMATION_LIMIT_REPORT.md`
 
 2. Run artifacts:
-   - C:\Users\rays\ArcFlow_Webv1.2\BUG_REPORT.md (latest)
-   - C:\Users\rays\ArcFlow_Webv1.2\FIX_REPORT.md (latest)
-   - C:\Users\rays\ArcFlow_Webv1.2\migration_tool\automation\logs\orchestrator-state.json (if exists)
-   - C:\Users\rays\ArcFlow_Webv1.2\migration_tool\automation\logs\run-*.json (all available, if exists)
+   - `{project_root}\BUG_REPORT.md` (latest)
+   - `{project_root}\FIX_REPORT.md` (latest)
+   - `{migration_tool_root}\automation\logs\orchestrator-state.json` (if exists)
+   - `{migration_tool_root}\automation\logs\run-*.json` (all available, if exists)
 
 3. Current documents (improvement targets):
-   - C:\Users\rays\ArcFlow_Webv1.2\AGENTS.md
-   - C:\Users\rays\ArcFlow_Webv1.2\WORKFLOW.md
-   - C:\Users\rays\ArcFlow_Webv1.2\LATEST_STATE.md
-   - C:\Users\rays\ArcFlow_Webv1.2\TASK_BOARD.md
-   - C:\Users\rays\ArcFlow_Webv1.2\docs\project-docs\MIGRATION_AUTOMATION_FEEDBACK.md (if exists)
+   - `{migration_tool_root}\AGENTS.md`
+   - `{migration_tool_root}\WORKFLOW.md`
+   - `{migration_tool_root}\LATEST_STATE.md`
+   - `{migration_tool_root}\TASK_BOARD.md`
+   - `{migration_tool_root}\docs\project-docs\MIGRATION_AUTOMATION_FEEDBACK.md` (if exists)
 
 ## Analysis — What to Look For
 
@@ -125,8 +128,8 @@ COMPLETION / LIMIT REACHED (reason)
 
 ## Constraints
 
-- Do NOT modify .claude/agents/*.md files
-- Do NOT modify run-all.ps1 or any automation scripts
+- Do NOT modify `.claude/agents/*.md` files
+- Do NOT modify `run-all.ps1` or any automation scripts
 - Do NOT modify source code files
 - Do NOT rewrite or restructure existing document content
 - Only ADD to documents — append new insights, do not replace existing ones
