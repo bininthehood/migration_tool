@@ -80,7 +80,8 @@ SUCCESS — exit if ALL conditions met:
   - all steps PASS (excluding SKIP)
   → Write `{project_root}\COMPLETION_REPORT.md`
   → **Write orchestrator-progress.md** (현재 상태: "완료 — 모든 테스트 PASS")
-  → Invoke meta-agent (see ## Meta-agent Invocation)
+  → Invoke meta-agent ONLY IF previous_fixes is non-empty (code changes were made this session)
+  → If previous_fixes is empty (clean pass, no fixes): skip meta-agent, stop directly
   → Stop
 
 LIMIT REACHED — exit if ANY condition met:
@@ -88,7 +89,8 @@ LIMIT REACHED — exit if ANY condition met:
   - last 3 entries in pass_history show no increase
   → Write `{project_root}\AUTOMATION_LIMIT_REPORT.md`
   → **Write orchestrator-progress.md** (현재 상태: "한도 초과 — 자동화 중단")
-  → Invoke meta-agent (see ## Meta-agent Invocation)
+  → Invoke meta-agent ONLY IF previous_fixes is non-empty OR failures were non-environmental
+  → If all failures were environmental: skip meta-agent, report to user directly
   → Stop
 
 REGRESSION WARNING — do not exit, but flag:
@@ -96,6 +98,34 @@ REGRESSION WARNING — do not exit, but flag:
   → **Write orchestrator-progress.md** (현재 상태: "Step 2 — 회귀 감지, 사용자 승인 대기")
   → Include regression warning in review request
   → Do not proceed without explicit user approval
+
+### Step 2.5 — Environmental Failure Check
+
+**Before writing BUG_REPORT or calling dev-agent**, classify all failing steps:
+
+Environmental failure codes (infrastructure issues — NOT fixable by code changes):
+- `TOMCAT_NOT_READY` — Tomcat 미실행 또는 접근 불가
+- `TOMCAT_CONTROL_FAIL` — Tomcat 시작/중지 실패
+- `SESSION_CONTRACT_FAIL` — 로그인 세션 없음 (앱 실행 + 유효 자격증명 필요)
+- `PORT_CONFLICT` — 포트 3000/8080 이미 점유
+- `EPERM` / `spawn EPERM` — 권한 부족 (Playwright/프로세스 실행)
+- `FRONTEND_DEVSERVER_START_FAIL` — dev 서버 기동 실패 (포트/환경 문제)
+
+**Case A — 모든 실패가 environmental:**
+→ dev-agent 호출 금지
+→ Write `{project_root}\BUG_REPORT.md` with `cannot_fix: true`
+→ orchestrator-progress.md 업데이트 (현재 상태: "Step 2.5 — 환경 문제 감지, 사용자 조치 필요")
+→ 사용자에게 직접 보고 (구체적 복구 지침 포함: 예: "Tomcat을 시작해 주세요")
+→ 사용자에게 묻기: "1. 환경 조치 후 재실행  2. Stop"
+→ Step 3, 4, 5, 6 전부 건너뜀
+
+**Case B — 일부 environmental, 일부 코드 실패:**
+→ dev-agent는 코드 실패 항목만 처리
+→ BUG_REPORT에 환경 실패는 별도 섹션으로 분리 기재
+→ Step 3으로 진행 (코드 실패 항목만 포함)
+
+**Case C — 코드 실패만 있음:**
+→ 기존 흐름대로 Step 3으로 진행
 
 ### Step 3 — Write BUG_REPORT
 
