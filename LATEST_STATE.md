@@ -1,171 +1,135 @@
-﻿# 현재 프로젝트 상태 (최종 업데이트: 2026-03-10)
+# 현재 프로젝트 상태 (최종 업데이트: 2026-03-13)
 
 ## 진행 단계
-전환(Transition) - 기능 화면 컷오버 적용 완료
+인벤토리(Inventory) - 마이그레이션 시작 전 (Phase 1)
 
 ## 마이그레이션 진행률
-100% (23개 화면 중 23개 완료)
+0% (0개 / 23개 화면 완료)
 
-## 세션 참고 산출물
-- SourceAnalyzer 모듈 이식/실행 완료 (2026-03-06)
-  - 모듈 경로: `automation/tools/source-analyzer/`
-  - 결과 경로: `source-analysis/`
-  - 대표 인덱스: `source-analysis/00_Index.md`
-  - 서술형 요약: `source-analysis/narrative/ReadMe.md`
+## 실제 프로젝트 상태 확인 (2026-03-13 기준)
 
-## 완료된 화면 목록
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| `src/main/frontend` | **없음** | CRA 프로젝트 생성 필요 |
+| `src/main/webapp/ui` | **없음** | 빌드 후 복사 필요 |
+| `dispatcher-servlet.xml` SPA 라우팅 | **없음** | `/ui/**` 리소스/뷰컨트롤러 추가 필요 |
+| `SpaForwardController.java` | **없음** | 생성 필요 |
+| JSP 화면 (기능) | **23개 전체 존재** | 이관 전 상태 |
+| npm 의존성 | **미설치** | bootstrap-frontend 후 npm install 필요 |
 
-| 화면명 | React 라우트 | 완료일 | 캡처 파일명 |
-|---|---|---|---|
-| Main | `/ui/main` | 2026-03-05 | `react-main-1920x911-9.png` |
-| Dashboard Status | `/ui/dashboard/status` | 2026-03-05 | `react-dashboard-status-1920x911-8.png` |
-| Dashboard Monitoring | `/ui/dashboard/monitoring` | 2026-03-04 | `react-monitoring-parity-1920x911.png` |
-| Logs Account | `/ui/logs/account` | 2026-03-04 | `react-log-account-parity-1920x911.png` |
-| Logs Web | `/ui/logs/web` | 2026-03-04 | `react-log-web-parity-1920x911.png` |
-| Logs Access | `/ui/logs/access` | 2026-03-04 | `react-log-access-parity-1920x911.png` |
-| Logs System | `/ui/logs/system` | 2026-03-04 | `react-log-system-parity-1920x911.png` |
-| Listen List | `/ui/listen/listen` | 2026-03-05 | `react-listen-player-react-only-1920x911-1920x911.png` |
-| Listen Target | `/ui/listen/listen_target` | 2026-03-04 | `react-listen-target-parity-1920x911-2.png` |
-| Listen Interface Info | `/ui/listen/interface_info` | 2026-03-04 | `react-interface-info-parity-1920x911.png` |
-| Listen Table Manager | `/ui/listen/table_manager` | 2026-03-05 | `react-table-manager-advanced-flow-1920x911.png` |
-| System Config | `/ui/system/config` | 2026-03-04 | `react-system-config-parity-1920x911.png` |
-| System Config Setting | `/ui/system/config_setting` | 2026-03-04 | `react-system-config-setting-parity-1920x911.png` |
-| System Menu | `/ui/system/menu` | 2026-03-04 | `react-system-menu-parity-1920x911.png` |
-| System Code | `/ui/system/code` | 2026-03-04 | `react-system-code-parity-1920x911.png` |
-| User Manage | `/ui/manag/user` | 2026-03-05 | `react-manag-user-group-picker-1920x911.png` |
-| Group Manage | `/ui/manag/group` | 2026-03-05 | `react-manag-group-tree-parity-1920x911.png` |
-| Permission Manage | `/ui/manag/perm` | 2026-03-05 | `react-manag-perm-group-header-1920x911.png` |
-| Approve | `/ui/approve/approve` | 2026-03-05 | `react-approve-popup-ux-approve-1920x911.png` |
-| Approve Request | `/ui/approve/approve_request` | 2026-03-05 | `react-approve-popup-ux-request-1920x911.png` |
-| Login | `/ui/login` | 2026-03-05 | `react-login-parity-1920x911.png` |
-| Recorder Sender | `/ui/recorder/sender` | 2026-03-04 | `react-recorder-sender-parity-1920x911-1920x911.png` |
-| Recorder Server | `/ui/recorder/server` | 2026-03-04 | `react-recorder-server-parity-1920x911-1920x911.png` |
+## 선행 작업 (마이그레이션 착수 전 필수)
 
-## 현재 진행중 항목
-- JSP 제거 소배치 실행 완료
-- Batch-1 완료: `dashboard/monitoring_bak.jsp` 제거
-- Batch-2 완료: 기능 화면 JSP 23건 제거 + 레거시 URL React 리다이렉트 적용
-- JSP 인벤토리 최종화(2026-03-06): 잔여 16건 분류 완료
-  - 유지: `error/*`, `view/download*`, `common/*`, `approve/document/v1/*`, `index.jsp`
-  - 제거 대상 기능 JSP는 배치 제거 완료 상태 유지
+### Step 1 — 프론트엔드 프로젝트 생성 및 의존성 설치
 
-## 남은 핵심 작업
-1. 컷오버 이후 운영 모니터링(로그/권한/팝업 예외) 단기 추적
-2. 잔여 JSP 전환 후보 착수: 결재 문서 팝업(`approve/document/v1/format_00,01`) -> React 전환 설계/구현
-3. 수렴 단계 문서 정리 및 잔여 레거시(`error/*`, `download*`, `common/*`) 유지/전환 정책 확정
-4. 자동화 안정화: `run-all.ps1` 캡처 단계의 대상 URL 선택(DEV `:3000` vs Tomcat `:8080`), UTF-8/mojibake 사전점검, dev server 기동 실패 분리
-
-## 최신 검증 로그
-- 2026-03-11: `run-all.ps1` 전체 오케스트레이션 성공 (`CaptureMode preset`, Tomcat 기준)
-  - 실행: `powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\Users\rays\ArcFlow_Webv1.2_test4 -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -DisableAutoInstallFrontendDeps`
-  - 결과: `Tomcat Ready Check`, `Verify Session Contract`, `Frontend Compile Check`, `Run Capture`, `Sync Session Log` 모두 성공
-  - 캡처: Tomcat 런타임 기준 22개 라우트 PASS (`captures/main/react-*-1920x911-2.png`)
-  - 로그: `automation/logs/run-20260311-145541.json`
-  - 주의: 동일 명령은 샌드박스 내부에선 Playwright `spawn EPERM` 이 날 수 있어, 브라우저 캡처가 포함된 런은 권한 상승 실행 기준으로 본다.
-- 2026-03-11: 결재 문서 팝업 React 브리지 문구/인코딩 정리
-  - 대상: `src/main/frontend/src/pages/approve/ApprovalDocumentBridgePage.js`
-  - 조치: 상단 깨진 주석 제거, 사용자 노출 문구를 한국어 기준으로 정리
-  - 검증: `npm run build` 성공 (build hash: `main.27e993f5.js`, warning only: `react-datepicker` critical dependency)
-- 2026-03-11: 결재 팝업 접근 로직 보정
-  - 대상: `src/main/frontend/src/utils/approvalPopup.js`
-  - 조치: 팝업 차단/오류 문구 정리, 취소 요청(`REQ_STATUS = X`)도 차단하지 않고 `docType 06` 읽기 전용 경로로 열리도록 수정
-  - 검증: `npm run build` 성공 (build hash: `main.68e43150.js`, warning only: `react-datepicker` critical dependency)
-- 2026-03-11: 결재/요청 목록 패널 한글 깨짐 정리
-  - 대상: `src/main/frontend/src/pages/approve/ApprovePanel.js`, `src/main/frontend/src/pages/approve/ApproveRequestPanel.js`
-  - 조치: 목록/필터/상세 모달 문구를 한국어 기준으로 재정리
-  - 검증: `npm run build` 성공 (build hash: `main.c42fb9a0.js`, warning only: `react-datepicker` critical dependency)
-- 2026-03-11: SPA 런타임 라우팅 복구 및 자동화 보완 진행
-  - Tomcat 확인: `GET /rays/ui/`, `GET /rays/ui/index.html`, `GET /rays/ui/main` -> `200`
-  - 원인 분리: 서버 다운이 아니라 `/ui` 라우팅/배포 반영 문제였음
-  - 자동화 보완:
-    - `run-all.ps1` 에 `TOMCAT_UI_NOT_READY` 분기 추가
-    - `UTF-8 Mojibake Check` preflight 추가 (`�|\?앹|\?몄|\?붿|\?덉|\?먮|\?대`)
-    - React dev server 실패를 `FRONTEND_DEVSERVER_START_FAIL` 로 분리
-    - dev server stdout/stderr 로그를 `automation/logs/devserver-*.log` 로 남기도록 보완
-    - 자동화 문서 생성/피드백 기록을 UTF-8(무BOM)으로 저장하도록 보완
-- 2026-03-11: 활성 승인 화면 한글 깨짐 복구
-  - 대상: `src/main/frontend/src/utils/approvalPopup.js`, `src/main/frontend/src/pages/approve/ApprovePanel.js`, `src/main/frontend/src/pages/approve/ApproveRequestPanel.js`
-  - 결과: `npm run build` 성공 (warning only: `react-datepicker` critical dependency)
-- 2026-03-10: 결재 문서 팝업 P0 전환 1차(브리지) 적용
-  - React 라우트 추가: `/ui/approval/document/:docId`
-  - 팝업 호출 변경: React 화면에서 직접 JSP POST 호출 대신 브리지 라우트 경유
-  - 브리지 동작: 토큰(sessionStorage)로 payload 전달 후 기존 `/approval/v1/document/{docId}` POST self-submit
-  - 결과: 레거시 팝업 동작 호환 유지 + React 진입점 확보(2차 본문 React 이관 준비)
-- 2026-03-10: 결재 문서 팝업 P0 전환 2차(부분 네이티브) 적용
-  - 대상: `docType 03/04/05` (조회/결재/승인)
-  - 구현: 브리지 페이지에서 `requestApprovalInfo` 조회 + `approvalComplete`/`approvalCancel` 처리
-  - fallback: `docType 01/02` 또는 오류 시 기존 JSP 폼 POST 경로로 자동 전환
-- 2026-03-10: 결재 문서 팝업 `docType 01/02` 보강
-  - 구현: `requestApproval` 생성 플로우에 `AP_USR_*` 옵션(`AP_USR_T_CD`, `AP_USR_T_EXP_CD`, `AP_USR_C_CD`, `AP_USR_C_GRP_CD`) 기반 대상자 필터 반영
-  - 구현: 확인자 그룹(`AP_USR_C_GRP_CD`) 및 본인 그룹 기준 부모/자기 그룹 범위 조회 반영(`group.selectParentGroup` 연계)
-- 2026-03-10: 프론트 빌드 검증
-  - `npm run build` 성공 (warning only: react-datepicker critical dependency)
-- 2026-03-09: 팀 공유 자동화 리허설 피드백 반영(검증 프로젝트: `ArcFlow_Webv1.2_test2`)
-  - `run-20260309-160559`: 실패 (`FRONTEND_DEPS_MISSING`) - `npm install` 단계에서 `EACCES`/registry fetch 오류
-  - `run-20260309-162333`: 실패 (`Run Capture`, `UNKNOWN`) - 실원인 분리 확인:
-    - 샌드박스 실행 시 `browserType.launch: spawn EPERM`
-    - 권한 상승 후 `page.goto ... ERR_CONNECTION_REFUSED` (`http://localhost:3000` 미기동)
-  - 우회/완료 검증:
-    - `npm run capture:react -- --preset all --baseUrl http://localhost:8080 --user admin --password admin` 성공
-    - `run-20260309-163621`: `CaptureMode none`으로 전체 오케스트레이션 성공 (Tomcat restart + batch migration + doc sync)
-- 2026-03-09: Tomcat Clean + Publish + Restart 이후 최종 반영 확인
-  - `/rays/ui/` index 참조 자산: `main.5ae8cf5c.js`, `main.f5ccebab.css`
-  - `GET /rays/user/v1/sessionChecker` -> `200`
-  - 접근로그 최근 구간 집계: `/rays/user/v1/sessionCheck` 404 = `0`, `/rays/user/v1/sessionChecker` 호출 = `2`
-- 2026-03-09: 라우팅 컷오버 실행 검증 완료
-  - 레거시 URL 22개 전수 확인: `/rays/{legacy-route}` -> `302` (`/rays/ui/login;jsessionid=...`)
-  - 근거 로그: `localhost_access_log.2026-03-09.txt` (14:14:56 KST 일괄 요청)
-- 2026-03-09: 로그인 세션체크 경로 정리
-  - 프론트 수정: `/user/v1/sessionCheck` -> `/user/v1/sessionChecker`
-  - 서버 엔드포인트 확인: `GET /rays/user/v1/sessionChecker` -> `200`
-- 2026-03-09: 빌드/산출물 동기화 재실행
-  - `npm run build` 완료 (build hash: `main.5ae8cf5c.js`, `main.f5ccebab.css`)
-  - `robocopy .../src/main/frontend/build -> .../src/main/webapp/ui /MIR` 완료
-  - Tomcat 재시작 후 런타임 반영 완료 (`main.5ae8cf5c.js`)
-- 2026-03-09: Tomcat 런타임 접근 로그 회귀 확인 완료
-  - 로그 경로: `C:\dev\eclipse\workspace\.metadata\.plugins\org.eclipse.wst.server.core\tmp0\logs\localhost_access_log.2026-03-09.txt`
-  - Tomcat 시작시각: `2026-03-09 13:52:17` (PID 94712)
-  - 집계: `TOTAL=455`, `4XX=7`, `5XX=0`
-  - 4xx 상위: `404 /`(3건), `404 /rays/user/v1/sessionCheck`(4건)
-- 2026-03-09: Tomcat 재시작 이후 런타임 해시 동기화 확인 완료
-  - `/rays/ui/` index 참조 자산: `main.b4a5106c.js`, `main.f5ccebab.css`
-  - `GET /rays/ui/static/js/main.b4a5106c.js` -> `200`
-  - `GET /rays/ui/static/css/main.f5ccebab.css` -> `200`
-- 2026-03-09: `npm run capture:react -- --preset all --user admin --password admin` 재실행 PASS
-  - 생성 캡처: 22개 라우트 갱신 (`captures/main/react-*-1920x911-*.png`)
-- 2026-03-09: 라우팅/리다이렉트 회귀 점검
-  - `GET /rays/login` -> `302` (`/rays/ui/login`)
-  - `GET /rays/main` -> `302` (`/rays/ui/login;jsessionid=...`)
-  - `GET /rays/ui` -> `302` (`/rays/ui/`)
-  - `GET /rays/ui/`, `/rays/ui/main`, `/rays/ui/dashboard/status` -> `200`
-- 2026-03-06: `npm run capture:react -- --preset all --user admin --password admin` 재실행 완료
-- 생성 캡처: `/main`, `/dashboard/status` 포함 22개 라우트 갱신 (`captures/main/react-*-1920x911-*.png`)
-- 2026-03-06: Tomcat `/rays/ui` 라우팅/정적자산 계약 확인 완료
-  - `GET /rays/ui` -> `302` (`Location: /rays/ui/`)
-  - `GET /rays/ui/`, `/rays/ui/main`, `/rays/ui/dashboard/status`, `/rays/ui/login` -> `200`
-  - `GET /rays/ui/static/js/main.7c7373b6.js` -> `200`
-  - `GET /rays/ui/static/css/main.ebd0d6d1.css` -> `200`
-- 2026-03-06: `/main`, `/dashboard/status` 사용자 수동 QA 완료(문제 없음)
-- 2026-03-06: Batch-2 실행 후 라우팅 점검
-  - `GET /rays/ui` -> `302`
-  - `GET /rays/ui/`, `/rays/ui/main` -> `200`
-  - `GET /rays/main` -> `302` (비로그인 시 로그인 경유 유지)
-  - `GET /rays/login` -> `302` (`/rays/ui/login` 리다이렉트)
-- 2026-03-06: 컷오버 사전 동기화 수행
-  - `npm run build` 완료 (build hash: `main.4b89f21c.js`, `main.0a23746a.css`)
-  - `robocopy .../src/main/frontend/build -> .../src/main/webapp/ui /MIR` 완료
-  - 런타임 Tomcat은 아직 이전 해시 서빙 중 (`main.7c7373b6.js`, `main.01bdf935.css`) -> Publish 필요
-
-## 빠른 실행 명령
-```powershell
-# 개발 서버
-cd C:\Users\rays\ArcFlow_Webv1.2\src\main\frontend
-npm run dev
-
-# 캡처 검증
-npm run capture:react -- --preset all --user admin --password admin
-
-# 빌드
-$env:BUILD_PATH='build_tmpX'; npm run build
+```bash
+# WSL / Linux 기준
+bash migration_tool/automation/bootstrap-frontend.sh \
+  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
+  --apply \
+  --install-deps
 ```
 
+```powershell
+# Windows PowerShell 기준
+powershell -ExecutionPolicy Bypass -File migration_tool/automation/bootstrap-frontend.ps1 `
+  -ProjectRoot C:\...\ArcFlow_Webv1.2 `
+  -Apply `
+  -InstallDeps
+```
+
+결과:
+- `src/main/frontend/` 폴더 생성 (package.json, src/, public/, scripts/ 포함)
+- `src/main/webapp/ui/` 폴더 생성
+- `npm install` 완료
+
+### Step 2 — Spring MVC SPA 라우팅 설정
+
+대상 파일: `src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml`
+
+추가 필요 항목:
+```xml
+<!-- SPA 정적 리소스 서빙 -->
+<mvc:resources mapping="/ui/**" location="/ui/"/>
+<mvc:default-servlet-handler />
+
+<!-- SPA 진입점 뷰 컨트롤러 -->
+<mvc:view-controller path="/ui" view-name="redirect:/ui/"/>
+<mvc:view-controller path="/ui/" view-name="forward:/ui/index.html"/>
+
+<!-- 브라우저 호환 리소스 매핑 -->
+<mvc:resources mapping="/static/**" location="/ui/static/"/>
+<mvc:resources mapping="/manifest.json" location="/ui/"/>
+<mvc:resources mapping="/favicon.ico" location="/ui/"/>
+```
+
+대상 파일: `src/main/java/com/rays/app/web/SpaForwardController.java` (신규 생성)
+- `/ui` redirect 핸들러
+- `/ui/` index forward 핸들러
+- 확장자 없는 `/ui/**` forward 핸들러
+
+### Step 3 — 초기 빌드 및 배포 확인
+
+```powershell
+cd src/main/frontend
+npm run build
+robocopy build ..\..\..\webapp\ui /MIR
+# Eclipse WTP → Tomcat Clean + Publish + Restart
+# GET http://localhost:8080/rays/ui/ → 200 확인
+```
+
+## JSP 인벤토리 (이관 대상)
+
+| # | JSP 경로 | 레거시 URL | React 대상 라우트 | 상태 |
+|---|---|---|---|---|
+| 1 | `login.jsp` | `/login` | `/ui/login` | 대기 |
+| 2 | `main.jsp` | `/main` | `/ui/main` | 대기 |
+| 3 | `dashboard/status.jsp` | `/dashboard/status` | `/ui/dashboard/status` | 대기 |
+| 4 | `dashboard/monitoring.jsp` | `/dashboard/monitoring` | `/ui/dashboard/monitoring` | 대기 |
+| 5 | `logs/log_account.jsp` | `/logs/log_account` | `/ui/logs/account` | 대기 |
+| 6 | `logs/log_web.jsp` | `/logs/log_web` | `/ui/logs/web` | 대기 |
+| 7 | `logs/log_access.jsp` | `/logs/log_access` | `/ui/logs/access` | 대기 |
+| 8 | `logs/log_system.jsp` | `/logs/log_system` | `/ui/logs/system` | 대기 |
+| 9 | `listen/listen.jsp` | `/listen/listen` | `/ui/listen/listen` | 대기 |
+| 10 | `listen/listen_target.jsp` | `/listen/listen_target` | `/ui/listen/listen_target` | 대기 |
+| 11 | `listen/interface_info.jsp` | `/listen/interface_info` | `/ui/listen/interface_info` | 대기 |
+| 12 | `listen/table_manager.jsp` | `/listen/table_manager` | `/ui/listen/table_manager` | 대기 |
+| 13 | `system/config.jsp` | `/system/config` | `/ui/system/config` | 대기 |
+| 14 | `system/config_setting.jsp` | `/system/config_setting` | `/ui/system/config_setting` | 대기 |
+| 15 | `system/menu.jsp` | `/system/menu` | `/ui/system/menu` | 대기 |
+| 16 | `system/code.jsp` | `/system/code` | `/ui/system/code` | 대기 |
+| 17 | `manag/user.jsp` | `/manag/user` | `/ui/manag/user` | 대기 |
+| 18 | `manag/group.jsp` | `/manag/group` | `/ui/manag/group` | 대기 |
+| 19 | `manag/perm.jsp` | `/manag/perm` | `/ui/manag/perm` | 대기 |
+| 20 | `approve/approve.jsp` | `/approve/approve` | `/ui/approve/approve` | 대기 |
+| 21 | `approve/approve_request.jsp` | `/approve/approve_request` | `/ui/approve/approve_request` | 대기 |
+| 22 | `recorder/sender.jsp` | `/recorder/sender` | `/ui/recorder/sender` | 대기 |
+| 23 | `recorder/server.jsp` | `/recorder/server` | `/ui/recorder/server` | 대기 |
+
+## 유지 JSP (이관 대상 아님)
+
+| JSP 경로 | 유지 사유 |
+|---|---|
+| `common/inc_*.jsp`, `header.jsp` | 공통 include — JSP 완전 제거 시까지 유지 |
+| `index.jsp` | 기본 진입 — 유지 |
+| `error/page.jsp` | 에러 페이지 — 추후 React 에러 라우트로 전환 검토 |
+| `view/download.jsp`, `view/download_agent.jsp` | 파일/에이전트 다운로드 — 추후 전환 검토 |
+| `approve/document/v1/format_00.jsp`, `format_01.jsp` | 결재 문서 팝업 — 추후 전환 검토 |
+
+## 남은 핵심 작업
+
+1. **선행 작업 완료**: bootstrap-frontend → dispatcher-servlet.xml 설정 → 초기 빌드
+2. **Phase 1 (인벤토리)**: JSP/API/컨트롤러 매핑 전체 목록 작성
+3. **Phase 2 (병행 운영)**: CRA 기반 React 앱 구조 설계, 공통 레이아웃/세션/라우팅 구현
+4. **Phase 3 (전환)**: 화면 단위 JSP → React 이관 (P0 로그인/메인 → P1 기능화면 순)
+
+## 빠른 실행 명령
+
+```powershell
+# 프론트엔드 부트스트랩 (최초 1회)
+powershell -ExecutionPolicy Bypass -File automation\bootstrap-frontend.ps1 `
+  -ProjectRoot <project-root> -Apply -InstallDeps
+
+# 자동화 실행 (부트스트랩 완료 후)
+powershell -ExecutionPolicy Bypass -File automation\run-all.ps1 `
+  -ProjectRoot <project-root> -CaptureMode none -FrontendBuildTimeoutSec 1800
+```

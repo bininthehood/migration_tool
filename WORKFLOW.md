@@ -1,5 +1,46 @@
 # WORKFLOW.md
 
+## Git 최신화 규약 (새 레거시 프로젝트 적용 시 필수)
+
+> **migration_tool은 프로젝트 고유 상태(완료된 화면, 캡처, 로그)를 포함하지 않고,**
+> **항상 새 레거시 프로젝트에 즉시 적용 가능한 클린 상태로 git에 유지한다.**
+
+### git에 포함하지 않는 파일 (프로젝트별 생성물)
+- `src/main/frontend/` — 각 프로젝트에서 bootstrap-frontend로 생성
+- `src/main/webapp/ui/` — 각 프로젝트에서 npm run build 후 복사
+- `automation/logs/run-*.json` — 실행 로그 (프로젝트별)
+- `automation/logs/devserver-*.log` — dev 서버 로그
+- `captures/` — 스크린샷 캡처 (프로젝트별)
+- `source-analysis/` — SourceAnalyzer 결과 (프로젝트별)
+
+### git에 반드시 포함하는 파일 (공유 자산)
+- `AGENTS.md` — 절대 원칙 및 프로젝트 제약
+- `WORKFLOW.md` — 이 문서
+- `LATEST_STATE.md` — **항상 Phase 0 (Inventory) 초기 상태로 커밋**
+- `TASK_BOARD.md` — **항상 0% 미착수 상태로 커밋**
+- `automation/next-session-manifest.json` — **항상 phase: Inventory, setup_required: true 로 커밋**
+- `automation/migration-screen-map.json` — **모든 status: "pending" 으로 커밋**
+- `automation/run-all.ps1`, `run-all.sh` 등 자동화 스크립트 전체
+- `automation/bootstrap-frontend.sh`, `bootstrap-frontend.ps1`
+- `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md` — **빈 템플릿 상태로 커밋**
+
+### 커밋 전 체크리스트
+```
+[ ] LATEST_STATE.md → 진행률 0%, Phase: Inventory
+[ ] TASK_BOARD.md → 모든 항목 [ ] 대기 상태
+[ ] next-session-manifest.json → phase: Inventory, latest_run.status: not_run
+[ ] migration-screen-map.json → 모든 status: "pending"
+[ ] MIGRATION_AUTOMATION_FEEDBACK.md → 내용 없음 (템플릿만)
+[ ] src/main/frontend/ 미포함 확인
+[ ] src/main/webapp/ui/ 미포함 확인
+[ ] automation/logs/ 미포함 확인
+[ ] captures/ 미포함 확인
+```
+
+영문 요약: Keep migration_tool repo in clean initial state — no project-specific build artifacts, logs, captures, or progress records. Always committable to a fresh legacy project.
+
+---
+
 ## Next Session Entry
 
 Read in this order:
@@ -9,7 +50,10 @@ Read in this order:
 3. `LATEST_STATE.md`
 4. `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md`
 
-Preferred command:
+**Check `next-session-manifest.json` → `setup_required` 필드 먼저 확인.**
+`setup_required.frontend_dir_missing: true` 이면 bootstrap-frontend 먼저 실행 후 자동화 진행.
+
+Preferred command (Phase 0 완료 후):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 `
@@ -36,7 +80,6 @@ powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 `
 ```
 
 Operational notes:
-- Current phase is `Transition`.
 - Default verification path is Tomcat runtime `http://localhost:8080/rays/ui/...`.
 - `localhost:3000` is a secondary dev-only route, not the primary automation target.
 - Capture-including runs should be treated as elevated-permission runs because Playwright may fail with `spawn EPERM` in sandboxed execution.
@@ -58,8 +101,9 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 
 ## Startup Checklist
 
-1. State the phase as `Transition`.
-2. Confirm routing contract files:
+1. `next-session-manifest.json`의 `setup_required` 필드 확인 — `frontend_dir_missing: true`이면 bootstrap-frontend 먼저.
+2. 현재 Phase 확인 (`LATEST_STATE.md`).
+3. Confirm routing contract files:
    - `src/main/webapp/WEB-INF/web.xml`
    - `src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml`
    - `src/main/java/com/rays/app/web/SpaForwardController.java`

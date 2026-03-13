@@ -17,21 +17,25 @@ build/
 build_tmp*/
 dist/
 
-# Frontend dependencies and build artifacts
-src/main/frontend/node_modules/
-src/main/frontend/node/
-src/main/frontend/build/
-src/main/frontend/build_tmp*/
+# Frontend project — created per-project via bootstrap-frontend, never committed
+src/main/frontend/
+
+# React build output — created per-project via npm run build + copy, never committed
+src/main/webapp/ui/
+
+# Source analysis output — generated per-project by SourceAnalyzer
+source-analysis/
 
 # Runtime logs / diagnostics
 *.log
 gcm-diagnose.log
 
-# QA captures (generated)
+# QA captures (generated per-project)
 captures/
+
+# Automation run logs (generated per-project)
+automation/logs/
 
 # Large vendor archive (GitHub 100MB limit)
 src/main/webapp/resources/component/Highcharts/api.zip
-
-automation/logs/
 

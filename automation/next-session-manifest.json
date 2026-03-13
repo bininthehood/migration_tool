@@ -1,37 +1,43 @@
 {
     "format_version":  1,
-    "updated_at":  "2026-03-12T14:02:00.0503511+09:00",
-    "phase":  "Transition",
-    "purpose":  "Compact execution manifest for rerunning the same automation test next session.",
+    "updated_at":  "2026-03-13T00:00:00.0000000+09:00",
+    "phase":  "Inventory",
+    "purpose":  "Compact execution manifest for the next session. Project is at Phase 0 (Setup) — frontend not yet created.",
     "read_order":  [
                        "AGENTS.md",
                        "automation/next-session-manifest.json",
                        "LATEST_STATE.md",
                        "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md"
                    ],
+    "setup_required":  {
+                           "frontend_dir_missing":  true,
+                           "webapp_ui_missing":  true,
+                           "spa_routing_missing":  true,
+                           "npm_deps_installed":  false,
+                           "action":  "Run bootstrap-frontend before running run-all.ps1",
+                           "bootstrap_command_bash":  "bash automation/bootstrap-frontend.sh --project-root <project-root> --apply --install-deps",
+                           "bootstrap_command_ps1":  "powershell -ExecutionPolicy Bypass -File automation/bootstrap-frontend.ps1 -ProjectRoot <project-root> -Apply -InstallDeps"
+                       },
     "preferred_flow":  {
-                           "id":  "tomcat_runtime_capture",
-                           "reason":  "Validated on 2026-03-11 as the most stable path.",
-                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2\\migration_tool -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -FrontendBuildTimeoutSec 1800",
-                           "requires_elevation":  true,
+                           "id":  "no_capture_validation",
+                           "reason":  "frontend not yet bootstrapped — use CaptureMode none until Phase 2 complete.",
+                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot <project-root> -CaptureMode none -FrontendBuildTimeoutSec 1800",
+                           "requires_elevation":  false,
                            "base_url":  "http://localhost:8080",
                            "context_path":  "/rays",
                            "success_criteria":  [
+                                                    "UTF-8 Mojibake Check success",
+                                                    "Frontend Bootstrap Check success",
                                                     "Tomcat Ready Check success",
-                                                    "Verify Session Contract success",
-                                                    "Frontend Compile Check success",
-                                                    "Run Capture success",
-                                                    "Sync Session Log success"
+                                                    "Validate Skill Integration success",
+                                                    "Check Routing Contract success"
                                                 ],
-                           "expected_runtime":  {
-                                                    "automation_only_sec":  70.26,
-                                                    "practical_elapsed_minutes":  "10-20"
-                                                }
+                           "note":  "Tomcat Ready Check will fail until webapp/ui is deployed. Run bootstrap-frontend first, then build and deploy."
                        },
     "fallback_flow":  {
-                          "id":  "no_capture_validation",
-                          "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot C:\\Users\\rays\\ArcFlow_Webv1.2\\migration_tool -CaptureMode none -FrontendBuildTimeoutSec 1800",
-                          "use_when":  "Use when browser capture permission (EPERM) or GUI constraints block preset execution."
+                          "id":  "bootstrap_then_validate",
+                          "command":  "powershell -ExecutionPolicy Bypass -File automation/bootstrap-frontend.ps1 -ProjectRoot <project-root> -Apply -InstallDeps",
+                          "use_when":  "Use when src/main/frontend or src/main/webapp/ui does not exist."
                       },
     "environment":  {
                         "tomcat_base_url":  "http://localhost:8080",
@@ -41,31 +47,21 @@
                         "encoding":  "UTF-8 without BOM"
                     },
     "latest_run":  {
-                       "run_id":  "20260312-140133",
-                       "status":  "failed",
-                       "log":  "automation/logs/run-20260312-140133.json",
-                       "duration_sec":  26.34,
-                       "failed_step":  "Verify Session Contract",
-                       "failed_code":  "SESSION_CONTRACT_FAIL"
+                       "run_id":  "none",
+                       "status":  "not_run",
+                       "note":  "No successful run yet. Bootstrap frontend and configure Spring SPA routing first."
                    },
-    "validated_capture_reference":  {
-                                        "run_id":  "20260311-145541",
-                                        "status":  "success",
-                                        "log":  "automation/logs/run-20260311-145541.json",
-                                        "capture_mode":  "preset",
-                                        "capture_base_url":  "http://localhost:8080",
-                                        "duration_sec":  70.26
-                                    },
     "known_constraints":  [
-                              "Playwright capture is reliable when executed with elevated permission.",
+                              "src/main/frontend does not exist — bootstrap-frontend must be run before any automation.",
+                              "src/main/webapp/ui does not exist — npm run build + copy required before Tomcat Ready Check.",
+                              "dispatcher-servlet.xml has no /ui/** routing — SpaForwardController and XML config must be added.",
                               "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
-                              "Tomcat readiness and /ui readiness are handled as separate states."
+                              "Playwright capture requires elevated permission (spawn EPERM risk in sandbox)."
                           ],
     "post_run_updates":  [
                              "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md",
                              "LATEST_STATE.md",
                              "TASK_BOARD.md",
-                             "docs-migration-backlog.md",
-                             "dist/migration-kit"
+                             "docs-migration-backlog.md"
                          ]
 }
