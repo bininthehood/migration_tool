@@ -1,67 +1,75 @@
 {
-    "format_version":  1,
-    "updated_at":  "2026-03-13T00:00:00.0000000+09:00",
-    "phase":  "Inventory",
-    "purpose":  "Compact execution manifest for the next session. Project is at Phase 0 (Setup) — frontend not yet created.",
-    "read_order":  [
-                       "AGENTS.md",
-                       "automation/next-session-manifest.json",
-                       "LATEST_STATE.md",
-                       "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md"
-                   ],
-    "setup_required":  {
-                           "frontend_dir_missing":  true,
-                           "webapp_ui_missing":  true,
-                           "spa_routing_missing":  true,
-                           "npm_deps_installed":  false,
-                           "action":  "Run bootstrap-frontend before running run-all.ps1",
-                           "bootstrap_command_bash":  "bash automation/bootstrap-frontend.sh --project-root <project-root> --apply --install-deps",
-                           "bootstrap_command_ps1":  "powershell -ExecutionPolicy Bypass -File automation/bootstrap-frontend.ps1 -ProjectRoot <project-root> -Apply -InstallDeps"
-                       },
-    "preferred_flow":  {
-                           "id":  "no_capture_validation",
-                           "reason":  "frontend not yet bootstrapped — use CaptureMode none until Phase 2 complete.",
-                           "command":  "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot <project-root> -CaptureMode none -FrontendBuildTimeoutSec 1800",
-                           "requires_elevation":  false,
-                           "base_url":  "http://localhost:8080",
-                           "context_path":  "/rays",
-                           "success_criteria":  [
-                                                    "UTF-8 Mojibake Check success",
-                                                    "Frontend Bootstrap Check success",
-                                                    "Tomcat Ready Check success",
-                                                    "Validate Skill Integration success",
-                                                    "Check Routing Contract success"
-                                                ],
-                           "note":  "Tomcat Ready Check will fail until webapp/ui is deployed. Run bootstrap-frontend first, then build and deploy."
-                       },
-    "fallback_flow":  {
-                          "id":  "bootstrap_then_validate",
-                          "command":  "powershell -ExecutionPolicy Bypass -File automation/bootstrap-frontend.ps1 -ProjectRoot <project-root> -Apply -InstallDeps",
-                          "use_when":  "Use when src/main/frontend or src/main/webapp/ui does not exist."
-                      },
-    "environment":  {
-                        "tomcat_base_url":  "http://localhost:8080",
-                        "tomcat_context_path":  "/rays",
-                        "capture_base_url":  "http://localhost:8080",
-                        "frontend_dev_port":  3000,
-                        "encoding":  "UTF-8 without BOM"
-                    },
-    "latest_run":  {
-                       "run_id":  "none",
-                       "status":  "not_run",
-                       "note":  "No successful run yet. Bootstrap frontend and configure Spring SPA routing first."
-                   },
-    "known_constraints":  [
-                              "src/main/frontend does not exist — bootstrap-frontend must be run before any automation.",
-                              "src/main/webapp/ui does not exist — npm run build + copy required before Tomcat Ready Check.",
-                              "dispatcher-servlet.xml has no /ui/** routing — SpaForwardController and XML config must be added.",
-                              "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
-                              "Playwright capture requires elevated permission (spawn EPERM risk in sandbox)."
-                          ],
-    "post_run_updates":  [
-                             "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md",
-                             "LATEST_STATE.md",
-                             "TASK_BOARD.md",
-                             "docs-migration-backlog.md"
-                         ]
+    "format_version": 1,
+    "updated_at": "2026-03-13T00:00:00.0000000+09:00",
+    "phase": "Inventory",
+    "purpose": "Compact execution manifest. Development phase — Tomcat/session checks skipped by default. Eclipse Publish is a manual milestone step.",
+    "read_order": [
+        "AGENTS.md",
+        "automation/next-session-manifest.json",
+        "LATEST_STATE.md",
+        "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md"
+    ],
+    "dev_workflow": {
+        "description": "During React migration (Phase 1-3), automation targets :3000 dev server. Eclipse Publish + :8080 verification is a manual milestone check.",
+        "automation_target": "http://localhost:3000",
+        "milestone_check": "http://172.26.208.1:8080 — manual Eclipse Publish required"
+    },
+    "preferred_flow": {
+        "id": "dev_validation",
+        "reason": "Development phase — skip Tomcat/session checks, validate routing/docs/build only.",
+        "command": "bash migration_tool/automation/run-all.sh --project-root <project-root> --capture-mode none --skip-tomcat-check --skip-session-contract-check --frontend-build-timeout-sec 1800",
+        "requires_elevation": false,
+        "base_url": "http://localhost:3000",
+        "context_path": "/rays",
+        "success_criteria": [
+            "UTF-8 Mojibake Check success",
+            "Frontend Bootstrap Check success",
+            "Ensure Frontend Dependencies success",
+            "Frontend Compile Check success",
+            "Validate Skill Integration success",
+            "Check Routing Contract success",
+            "Sync Session Log success"
+        ]
+    },
+    "fallback_flow": {
+        "id": "dev_validation_no_build",
+        "command": "bash migration_tool/automation/run-all.sh --project-root <project-root> --capture-mode none --skip-tomcat-check --skip-session-contract-check --skip-frontend-compile-check",
+        "use_when": "Use when npm run build is not needed (no source changes) or build environment is unavailable."
+    },
+    "milestone_flow": {
+        "id": "tomcat_runtime_capture",
+        "description": "Run manually after Eclipse Publish to verify :8080 deployment.",
+        "command": "bash migration_tool/automation/run-all.sh --project-root <project-root> --capture-mode preset --capture-preset all --tomcat-base-url http://172.26.208.1:8080 --frontend-build-timeout-sec 1800",
+        "requires_elevation": true,
+        "use_when": "After Eclipse Publish at migration milestones (e.g. phase cutover, QA review)."
+    },
+    "environment": {
+        "tomcat_base_url": "http://172.26.208.1:8080",
+        "tomcat_context_path": "/rays",
+        "dev_server_url": "http://localhost:3000",
+        "frontend_dev_port": 3000,
+        "encoding": "UTF-8 without BOM"
+    },
+    "latest_run": {
+        "run_id": "20260313-163346",
+        "status": "success",
+        "duration_sec": 5,
+        "passed_steps": 7,
+        "failed_step": "",
+        "failed_code": "",
+        "skip_flags_used": ["--skip-tomcat-check", "--skip-session-contract-check"]
+    },
+    "known_constraints": [
+        "Tomcat runs on Windows; WSL automation accesses it via 172.26.208.1:8080.",
+        "Eclipse Publish is required to sync webapp/ui/ to the running Tomcat instance — this is a manual milestone step.",
+        "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
+        "Playwright capture requires elevated permission (spawn EPERM risk in sandbox).",
+        "src/main/frontend exists and npm install is complete — bootstrap-frontend already run."
+    ],
+    "post_run_updates": [
+        "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md",
+        "LATEST_STATE.md",
+        "TASK_BOARD.md",
+        "docs-migration-backlog.md"
+    ]
 }

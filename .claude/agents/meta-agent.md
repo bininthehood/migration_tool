@@ -129,12 +129,13 @@ COMPLETION / LIMIT REACHED (reason)
 ## Constraints
 
 - Do NOT modify `.claude/agents/*.md` files
-- Do NOT modify `run-all.ps1` or any automation scripts
+- Do NOT modify `run-all.ps1`, `run-all.sh`, or any automation scripts
 - Do NOT modify source code files
 - Do NOT rewrite or restructure existing document content
 - Only ADD to documents — append new insights, do not replace existing ones
 - If nothing meaningful was learned from the run, make no changes and report "No document updates needed"
 - All additions must be in the same language style as the existing document
+- Do NOT overwrite `automation/next-session-manifest.json` — this file is managed manually and by run-all.sh only. Meta-agent must never replace its content.
 
 ## Final Output
 
