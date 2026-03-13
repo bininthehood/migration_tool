@@ -4,60 +4,14 @@ param(
   [string]$ProjectRoot = (Get-Location).Path,
   [string]$OutputPath
 )
-
-$backlog = Join-Path $ProjectRoot 'docs-migration-backlog.md'
-$endpointMap = Join-Path $ProjectRoot 'ENDPOINT_MAP.md'
-
-function Write-Utf8NoBomFile([string]$Path, [string]$Content) {
-  $parent = Split-Path $Path -Parent
-  if ($parent -and -not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
-  $enc = New-Object System.Text.UTF8Encoding($false)
-  [System.IO.File]::WriteAllText($Path, $Content, $enc)
-}
-
-$backlogHint = ''
-if (Test-Path $backlog) {
-  $escaped = [regex]::Escape($LegacyUrl)
-  $backlogHint = (Get-Content $backlog | Where-Object { $_ -match $escaped } | Select-Object -First 1)
-}
-
-$endpointHint = ''
-if (Test-Path $endpointMap) {
-  $routeKey = ($ReactRoute -replace '^/ui/', '' -replace '/', ' ')
-  $endpointHint = (Get-Content $endpointMap | Where-Object { $_ -match [regex]::Escape($routeKey.Split(' ')[0]) } | Select-Object -First 1)
-}
-
-$md = @"
-# Migration Checklist
-
-- Legacy URL: `$LegacyUrl`
-- React Route: `$ReactRoute`
-- Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss K')
-
-## Pre-check
-- [ ] Confirm routing contract files
-- [ ] Confirm API dependencies
-- [ ] Confirm auth/session behavior
-
-## Implementation
-- [ ] Add/adjust React route and page component
-- [ ] Keep JSP entry URL unchanged
-- [ ] Keep backend API contract unchanged
-
-## Validation
-- [ ] Direct access `$ReactRoute` returns 200
-- [ ] Refresh on `$ReactRoute` returns 200
-- [ ] No basename mismatch or console errors
-- [ ] Capture evidence collected
-
-## Evidence Hints
-- Backlog line: $backlogHint
-- Endpoint hint: $endpointHint
-"@
-
+# Thin wrapper — delegates to migrate-screen-checklist.sh
+$sh = Join-Path $PSScriptRoot 'migrate-screen-checklist.sh'
+$linuxSh   = (wsl wslpath -u "$sh").Trim()
+$linuxRoot = (wsl wslpath -u "$ProjectRoot").Trim()
+$args = @("--project-root", $linuxRoot, "--legacy-url", $LegacyUrl, "--react-route", $ReactRoute)
 if ($OutputPath) {
-  Write-Utf8NoBomFile -Path $OutputPath -Content $md
-  Write-Host "Wrote checklist: $OutputPath"
-} else {
-  $md
+  $linuxOut = (wsl wslpath -u "$OutputPath").Trim()
+  $args += @("--output-path", $linuxOut)
 }
+wsl bash $linuxSh @args
+exit $LASTEXITCODE
