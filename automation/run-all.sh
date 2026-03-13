@@ -464,90 +464,32 @@ PY
   local latest_failed_code
   latest_failed_code="$(jq -r 'first(.[] | select(.status == "failed")) | .error_code // ""' <<<"$STEPS_JSON")"
 
-  jq -n \
-    --arg updated_at "$finished_at" \
-    --arg command "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $PROJECT_ROOT -CaptureMode preset -CapturePreset all -CaptureBaseUrl http://localhost:8080 -FrontendBuildTimeoutSec $FRONTEND_BUILD_TIMEOUT_SEC" \
-    --arg fallback_command "powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 -ProjectRoot $PROJECT_ROOT -CaptureMode none -FrontendBuildTimeoutSec $FRONTEND_BUILD_TIMEOUT_SEC" \
-    --arg tomcat_base_url "$TOMCAT_BASE_URL" \
-    --arg tomcat_context_path "$TOMCAT_CONTEXT_PATH" \
-    --arg capture_base_url "$CAPTURE_BASE_URL" \
-    --argjson frontend_dev_port "$CAPTURE_DEV_SERVER_PORT" \
-    --arg run_id "$RUN_ID" \
-    --arg status "$RUN_STATUS" \
-    --arg duration_sec "$total_duration" \
-    --arg failed_step "$latest_failed_step" \
-    --arg failed_code "$latest_failed_code" \
-    '{
-      format_version: 1,
-      updated_at: $updated_at,
-      phase: "Transition",
-      purpose: "Compact execution manifest for rerunning the same automation test next session.",
-      read_order: [
-        "AGENTS.md",
-        "automation/next-session-manifest.json",
-        "LATEST_STATE.md",
-        "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md"
-      ],
-      preferred_flow: {
-        id: "tomcat_runtime_capture",
-        reason: "Validated on 2026-03-11 as the most stable path.",
-        command: $command,
-        requires_elevation: true,
-        base_url: "http://localhost:8080",
-        context_path: "/rays",
-        success_criteria: [
-          "Tomcat Ready Check success",
-          "Verify Session Contract success",
-          "Frontend Compile Check success",
-          "Run Capture success",
-          "Sync Session Log success"
-        ],
-        expected_runtime: {
-          automation_only_sec: 70.26,
-          practical_elapsed_minutes: "10-20"
-        }
-      },
-      fallback_flow: {
-        id: "no_capture_validation",
-        command: $fallback_command,
-        use_when: "Use when browser capture permission (EPERM) or GUI constraints block preset execution."
-      },
-      environment: {
-        tomcat_base_url: $tomcat_base_url,
-        tomcat_context_path: $tomcat_context_path,
-        capture_base_url: $capture_base_url,
-        frontend_dev_port: $frontend_dev_port,
-        encoding: "UTF-8 without BOM"
-      },
-      latest_run: {
-        run_id: $run_id,
-        status: $status,
-        log: ("automation/logs/run-" + $run_id + ".json"),
-        duration_sec: ($duration_sec | tonumber),
-        failed_step: $failed_step,
-        failed_code: $failed_code
-      },
-      validated_capture_reference: {
-        run_id: "20260311-145541",
-        status: "success",
-        log: "automation/logs/run-20260311-145541.json",
-        capture_mode: "preset",
-        capture_base_url: "http://localhost:8080",
-        duration_sec: 70.26
-      },
-      known_constraints: [
-        "Playwright capture is reliable when executed with elevated permission.",
-        "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
-        "Tomcat readiness and /ui readiness are handled as separate states."
-      ],
-      post_run_updates: [
-        "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md",
-        "LATEST_STATE.md",
-        "TASK_BOARD.md",
-        "docs-migration-backlog.md",
-        "dist/migration-kit"
-      ]
-    }' > "$MANIFEST_PATH"
+  # Read existing manifest to preserve manually-managed fields (preferred_flow, dev_workflow, etc.)
+  # Only update: updated_at, phase (from LATEST_STATE), latest_run fields
+  local current_phase
+  current_phase="$(grep -m1 '^## 진행 단계' -A1 "$PROJECT_ROOT/migration_tool/LATEST_STATE.md" 2>/dev/null | tail -1 | sed 's/^[[:space:]]*//' || echo "Inventory")"
+
+  if [[ -f "$MANIFEST_PATH" ]]; then
+    jq \
+      --arg updated_at "$finished_at" \
+      --arg phase "$current_phase" \
+      --arg run_id "$RUN_ID" \
+      --arg status "$RUN_STATUS" \
+      --arg duration_sec "$total_duration" \
+      --arg failed_step "$latest_failed_step" \
+      --arg failed_code "$latest_failed_code" \
+      '.updated_at = $updated_at
+      | .phase = $phase
+      | .latest_run = {
+          run_id: $run_id,
+          status: $status,
+          log: ("automation/logs/run-" + $run_id + ".json"),
+          duration_sec: ($duration_sec | tonumber),
+          failed_step: $failed_step,
+          failed_code: $failed_code
+        }' \
+      "$MANIFEST_PATH" > "${MANIFEST_PATH}.tmp" && mv "${MANIFEST_PATH}.tmp" "$MANIFEST_PATH"
+  fi
 }
 
 step_utf8_mojibake_check() {
