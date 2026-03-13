@@ -46,16 +46,17 @@ echo "project_root: $(wslpath -w "$(dirname "$(pwd)")")"
 
 ## Step 3 — 진행 상태 감시 창 자동 실행
 
-automation-orchestrator를 호출하기 전에 Bash 도구로 아래 명령을 실행합니다
-(migration_tool_root를 Step 0에서 계산한 값으로 치환):
+automation-orchestrator를 호출하기 전에 Bash 도구로 아래 명령을 실행합니다:
 
 ```bash
-PROGRESS_FILE=$(wslpath -w "$(pwd)/automation/logs/orchestrator-progress.md")
-powershell.exe -Command "Start-Process powershell -ArgumentList '-NoExit', '-Command', \"Get-Content '$PROGRESS_FILE' -Wait\""
+PROGRESS_FILE="$(pwd)/automation/logs/orchestrator-progress.md"
+mkdir -p "$(dirname "$PROGRESS_FILE")"
+touch "$PROGRESS_FILE"
+bash -c "tail -f '$PROGRESS_FILE'" &
 ```
 
 실행 후 사용자에게 알립니다:
-> "진행 상태 감시 창이 열렸습니다. `orchestrator-progress.md`가 각 Step마다 갱신됩니다."
+> "진행 상태 감시가 시작됐습니다. `orchestrator-progress.md`가 각 Step마다 갱신됩니다."
 
 ## Step 4 — automation-orchestrator 실행
 
