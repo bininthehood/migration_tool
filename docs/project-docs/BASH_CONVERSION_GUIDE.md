@@ -734,7 +734,7 @@ curl, jq, python3, nc (netcat), npm, npx, bash 4.0+
 ## 참고: 경로 구조
 
 ```
-project_root/                         (예: /mnt/c/Users/rays/ArcFlow_Webv1.2)
+project_root/                         (레거시 프로젝트 루트, CWD의 부모 디렉토리)
 └── migration_tool/                   (CWD of Claude Code)
     └── automation/
         ├── run-all.sh                ← 최종 목표
