@@ -467,7 +467,7 @@ PY
   # Read existing manifest to preserve manually-managed fields (preferred_flow, dev_workflow, etc.)
   # Only update: updated_at, phase (from LATEST_STATE), latest_run fields
   local current_phase
-  current_phase="$(grep -m1 '^## 진행 단계' -A1 "$PROJECT_ROOT/migration_tool/LATEST_STATE.md" 2>/dev/null | tail -1 | sed 's/^[[:space:]]*//' || echo "Inventory")"
+  current_phase="$(grep -m1 '^## 진행 단계' -A1 "$PROJECT_ROOT/migration_tool/LATEST_STATE.md" 2>/dev/null | tail -1 | tr -d '\r' | sed 's/^[[:space:]]*//' || echo "Inventory")"
 
   if [[ -f "$MANIFEST_PATH" ]]; then
     jq \
