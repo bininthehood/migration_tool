@@ -112,7 +112,7 @@ command -v npx >/dev/null 2>&1 || { echo "Error: npx required" >&2; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR_PATH="$PROJECT_ROOT/$LOG_DIR"
 FEEDBACK_PATH="$PROJECT_ROOT/$FEEDBACK_FILE"
-MANIFEST_PATH="$PROJECT_ROOT/automation/next-session-manifest.json"
+MANIFEST_PATH="$SCRIPT_DIR/next-session-manifest.json"
 RUN_ID="$(date '+%Y%m%d-%H%M%S')"
 RUN_STARTED_AT="$(date '+%Y-%m-%dT%H:%M:%S%z')"
 RUN_STATUS="success"
@@ -251,7 +251,9 @@ candidates = [root / "src", root / "automation"]
 extensions = {".js", ".jsx", ".ts", ".tsx", ".java", ".xml", ".jsp", ".ps1", ".sh", ".md", ".py"}
 replacement = "\ufffd"
 question_hangul = re.compile(r"\?[가-힣]")
-exclude_parts = {"node_modules", "build", "build_automation_smoke", "target", "dist", "captures"}
+exclude_parts = {"node_modules", "build", "build_automation_smoke", "target", "dist", "captures", "component"}
+# 의도적으로 mojibake 리터럴을 포함하는 파일 (오탐 방지)
+exclude_files = {"EncodingFixUtil.java"}
 
 hits = []
 for base in candidates:
@@ -261,6 +263,8 @@ for base in candidates:
         if not path.is_file() or path.suffix.lower() not in extensions:
             continue
         if any(part in exclude_parts for part in path.parts):
+            continue
+        if path.name in exclude_files:
             continue
         try:
             text = path.read_text(encoding="utf-8")
@@ -576,7 +580,7 @@ step_frontend_bootstrap_check() {
   [[ ${#missing[@]} -eq 0 ]] && return 0
 
   AUTO_LEGACY_MODE=true
-  local bootstrap_script="$PROJECT_ROOT/automation/bootstrap-frontend.sh"
+  local bootstrap_script="$SCRIPT_DIR/bootstrap-frontend.sh"
   [[ -f "$bootstrap_script" ]] || {
     echo "FRONTEND_BOOTSTRAP_REQUIRED: missing frontend artifacts (${missing[*]}) and missing bootstrap script." >&2
     return 1
@@ -594,7 +598,7 @@ step_frontend_bootstrap_check() {
 }
 
 step_tomcat_control() {
-  local script="$PROJECT_ROOT/automation/tomcat-control.sh"
+  local script="$SCRIPT_DIR/tomcat-control.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   local args=(bash "$script" --action "$TOMCAT_CONTROL_ACTION" --tomcat-home "$TOMCAT_HOME" --tomcat-base "$TOMCAT_BASE" --tomcat-jre-home "$TOMCAT_JRE_HOME" --base-url "$TOMCAT_BASE_URL" --context-path "$TOMCAT_CONTEXT_PATH" --health-path "$TOMCAT_HEALTH_PATH" --timeout "$TOMCAT_CONTROL_TIMEOUT_SEC")
   $TOMCAT_CONTROL_NO_HEALTH_CHECK && args+=(--no-health-check)
@@ -618,7 +622,7 @@ step_tomcat_ready_check() {
 }
 
 step_verify_session_contract() {
-  local script="$PROJECT_ROOT/automation/verify-session-contract.sh"
+  local script="$SCRIPT_DIR/verify-session-contract.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   add_command "bash automation/verify-session-contract.sh --project-root \"$PROJECT_ROOT\" --base-url $TOMCAT_BASE_URL --context-path $TOMCAT_CONTEXT_PATH --user $USER_NAME --password *****"
   bash "$script" --project-root "$PROJECT_ROOT" --base-url "$TOMCAT_BASE_URL" --context-path "$TOMCAT_CONTEXT_PATH" --user "$USER_NAME" --password "$PASSWORD"
@@ -698,7 +702,7 @@ step_ensure_capture_frontend_server() {
 }
 
 step_validate_skill_integration() {
-  local script="$PROJECT_ROOT/automation/validate-skill-integration.sh"
+  local script="$SCRIPT_DIR/validate-skill-integration.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   local effective_legacy=false
   if $LEGACY_MODE || $AUTO_LEGACY_MODE; then
@@ -718,7 +722,7 @@ step_validate_skill_integration() {
 }
 
 step_check_routing_contract() {
-  local script="$PROJECT_ROOT/automation/skills/springmvc-spa-routing-guard/scripts/check-routing-contract.sh"
+  local script="$SCRIPT_DIR/skills/springmvc-spa-routing-guard/scripts/check-routing-contract.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   if $LEGACY_MODE || $AUTO_LEGACY_MODE; then
     add_command "bash automation/skills/springmvc-spa-routing-guard/scripts/check-routing-contract.sh --project-root \"$PROJECT_ROOT\" --no-fail"
@@ -730,7 +734,7 @@ step_check_routing_contract() {
 }
 
 step_run_screen_migration() {
-  local script="$PROJECT_ROOT/automation/run-screen-migration.sh"
+  local script="$SCRIPT_DIR/run-screen-migration.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   local args=(bash "$script" --project-root "$PROJECT_ROOT" --migration-plan-file "$MIGRATION_PLAN_FILE" --output-dir "$MIGRATION_OUTPUT_DIR")
   [[ -n "$MIGRATE_SCREEN" ]] && args+=(--migrate-screen "$MIGRATE_SCREEN")
@@ -740,14 +744,14 @@ step_run_screen_migration() {
 }
 
 step_annotate_react_functions() {
-  local script="$PROJECT_ROOT/automation/annotate-react-functions.sh"
+  local script="$SCRIPT_DIR/annotate-react-functions.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   add_command "bash automation/annotate-react-functions.sh --project-root \"$PROJECT_ROOT\""
   bash "$script" --project-root "$PROJECT_ROOT"
 }
 
 step_run_capture() {
-  local script="$PROJECT_ROOT/automation/skills/react-capture-qa-runner/scripts/run-capture.sh"
+  local script="$SCRIPT_DIR/skills/react-capture-qa-runner/scripts/run-capture.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   local capture_start
   capture_start=$(date +%s)
@@ -784,7 +788,7 @@ step_build_frontend() {
 }
 
 step_sync_session_log() {
-  local script="$PROJECT_ROOT/automation/run-doc-sync.sh"
+  local script="$SCRIPT_DIR/run-doc-sync.sh"
   [[ -f "$script" ]] || { echo "Missing $script" >&2; return 1; }
   local args=(bash "$script" --project-root "$PROJECT_ROOT")
   local changed_files=(

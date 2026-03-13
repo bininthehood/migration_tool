@@ -3,6 +3,7 @@ set -euo pipefail
 
 command -v jq &>/dev/null || { echo "Error: jq is required but not installed." >&2; exit 1; }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(pwd)"
 LEGACY_MODE=false
 
@@ -34,17 +35,20 @@ add_result() {
 }
 
 # 1) Manifest required docs check
-MANIFEST_PATH="$PROJECT_ROOT/automation/project-doc-manifest.yml"
+MANIFEST_PATH="$SCRIPT_DIR/project-doc-manifest.yml"
 if [[ ! -f "$MANIFEST_PATH" ]]; then
   add_result "manifest exists" "false" "true" "Missing $MANIFEST_PATH"
 else
   add_result "manifest exists" "true" "true" "$MANIFEST_PATH"
   # Parse required: section (simple grep/awk, no YAML parser needed)
   REQUIRED_DOCS=$(awk '/^[[:space:]]*required:[[:space:]]*$/{flag=1;next} flag && /^[[:space:]]*optional:/{flag=0} flag && /^[[:space:]]*-[[:space:]]/{gsub(/^[[:space:]]*-[[:space:]]*/,""); print}' "$MANIFEST_PATH")
+  MIGRATION_TOOL_ROOT="$(dirname "$SCRIPT_DIR")"
   MISSING_DOCS=()
   while IFS= read -r doc; do
+    doc="${doc%$'\r'}"  # CRLF 방어
     [[ -z "$doc" ]] && continue
-    [[ ! -f "$PROJECT_ROOT/$doc" ]] && MISSING_DOCS+=("$doc")
+    # project_root 또는 migration_tool_root 어느 쪽에 있어도 통과
+    [[ ! -f "$PROJECT_ROOT/$doc" ]] && [[ ! -f "$MIGRATION_TOOL_ROOT/$doc" ]] && MISSING_DOCS+=("$doc")
   done <<< "$REQUIRED_DOCS"
   if [[ ${#MISSING_DOCS[@]} -eq 0 ]]; then
     REQUIRED_COUNT=$(echo "$REQUIRED_DOCS" | grep -c '\S' || true)
@@ -55,7 +59,7 @@ else
 fi
 
 # 2) legacy-migration-bootstrap
-BOOTSTRAP_SCRIPT="$PROJECT_ROOT/automation/skills/legacy-migration-bootstrap/scripts/bootstrap.sh"
+BOOTSTRAP_SCRIPT="$SCRIPT_DIR/skills/legacy-migration-bootstrap/scripts/bootstrap.sh"
 if [[ ! -f "$BOOTSTRAP_SCRIPT" ]]; then
   add_result "bootstrap skill script exists" "false" "true" "$BOOTSTRAP_SCRIPT"
 else
@@ -81,7 +85,7 @@ else
 fi
 
 # 3) springmvc-spa-routing-guard
-ROUTING_SCRIPT="$PROJECT_ROOT/automation/skills/springmvc-spa-routing-guard/scripts/check-routing-contract.sh"
+ROUTING_SCRIPT="$SCRIPT_DIR/skills/springmvc-spa-routing-guard/scripts/check-routing-contract.sh"
 if [[ ! -f "$ROUTING_SCRIPT" ]]; then
   add_result "routing-guard skill script exists" "false" "true" "$ROUTING_SCRIPT"
 else
@@ -94,7 +98,7 @@ else
 fi
 
 # 4) react-capture-qa-runner prerequisites
-CAPTURE_SCRIPT="$PROJECT_ROOT/automation/skills/react-capture-qa-runner/scripts/run-capture.sh"
+CAPTURE_SCRIPT="$SCRIPT_DIR/skills/react-capture-qa-runner/scripts/run-capture.sh"
 FRONTEND_PKG="$PROJECT_ROOT/src/main/frontend/package.json"
 if [[ ! -f "$CAPTURE_SCRIPT" ]]; then
   add_result "capture skill script exists" "false" "true" "$CAPTURE_SCRIPT"
@@ -116,7 +120,7 @@ else
 fi
 
 # 5) migration-doc-sync session log check
-SYNC_SCRIPT="$PROJECT_ROOT/automation/skills/migration-doc-sync/scripts/sync-doc-stub.sh"
+SYNC_SCRIPT="$SCRIPT_DIR/skills/migration-doc-sync/scripts/sync-doc-stub.sh"
 if [[ ! -f "$SYNC_SCRIPT" ]]; then
   add_result "doc-sync skill script exists" "false" "true" "$SYNC_SCRIPT"
 else
