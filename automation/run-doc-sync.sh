@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(pwd)"
 CHANGED_FILES=()
 COMMANDS=()
@@ -18,7 +19,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SYNC_SCRIPT="$PROJECT_ROOT/automation/skills/migration-doc-sync/scripts/sync-doc-stub.sh"
+SYNC_SCRIPT="$SCRIPT_DIR/skills/migration-doc-sync/scripts/sync-doc-stub.sh"
 if [[ ! -f "$SYNC_SCRIPT" ]]; then
   echo "Error: Skill script not found: $SYNC_SCRIPT" >&2
   exit 1
