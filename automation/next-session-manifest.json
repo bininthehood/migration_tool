@@ -51,10 +51,9 @@
         "encoding": "UTF-8 without BOM"
     },
     "latest_run": {
-        "run_id": "20260313-163346",
+        "run_id": "20260313-164221",
         "status": "success",
-        "duration_sec": 5,
-        "passed_steps": 7,
+        "duration_sec": 6,
         "failed_step": "",
         "failed_code": "",
         "skip_flags_used": ["--skip-tomcat-check", "--skip-session-contract-check"]
