@@ -4,7 +4,7 @@ This document tracks the current migration tasks for the ArcFlow_Webv1.2 project
 
 The project is undergoing incremental modernization with AI-assisted development.
 
-Migration progress: 0% (2026-03-13 기준)
+Migration progress: 0% (2026-03-16 기준) — Phase 0 검증 PASS / Phase 1 미착수 (Phase B migration-agent 미실행)
 완료 화면: 0개 / 전체 23개
 
 Agents must update this file as tasks are completed.
@@ -21,13 +21,15 @@ Agents must update this file as tasks are completed.
 
 # Phase 0 - Setup (선행 작업 — 착수 전 필수)
 
-[ ] 프론트엔드 프로젝트 생성 (`bootstrap-frontend.sh/ps1 --apply`)
-[ ] npm 의존성 설치 (`bootstrap-frontend.sh/ps1 --install-deps` 또는 `npm install`)
-[ ] `dispatcher-servlet.xml` — SPA 라우팅 설정 추가 (`/ui/**` 리소스, 뷰컨트롤러)
-[ ] `SpaForwardController.java` 생성 (`/ui`, `/ui/`, `/ui/**` 핸들러)
-[ ] `ViewController.java` — 레거시 `/{path}/{page}` 매핑에서 `ui` 제외 (`^(?!ui$).+`)
-[ ] 초기 `npm run build` 실행 및 `webapp/ui` 배포 확인
-[ ] `GET /rays/ui/` → 200 확인 (Tomcat 런타임)
+[x] 프론트엔드 프로젝트 생성 (`bootstrap-frontend.sh/ps1 --apply`)
+[x] npm 의존성 설치 (`bootstrap-frontend.sh/ps1 --install-deps` 또는 `npm install`)
+[x] `dispatcher-servlet.xml` — SPA 라우팅 설정 추가 (`/ui/**` 리소스, 뷰컨트롤러)
+[x] `SpaForwardController.java` 생성 (`/ui`, `/ui/`, `/ui/**` 핸들러)
+[x] `ViewController.java` — 레거시 `/{path}/{page}` 매핑에서 `ui` 제외 (`^(?!ui$).+`)
+[x] `src/main/frontend/public/index.html` 생성 (CRA 진입점 — npm run build PASS 확인됨)
+[x] `src/main/frontend/src/index.js` 생성 (CRA 진입점 — npm run build PASS 확인됨)
+[x] 초기 `npm run build` 실행 확인 (60.67 kB gzip, 2026-03-13 자동화 실행)
+[ ] `GET /rays/ui/` → 200 확인 (Tomcat 런타임 — Eclipse WTP 배포 후 수행)
 
 ---
 
@@ -112,12 +114,15 @@ Agents must update this file as tasks are completed.
 
 # Current Priority
 
-**Phase 0 선행 작업부터 시작.**
+**Phase 0 검증 완료 — Phase B (migration-agent) 명시적 착수 필요.**
 
-1. `bootstrap-frontend.sh/ps1 --apply --install-deps` 실행
-2. `dispatcher-servlet.xml` SPA 라우팅 설정
-3. `SpaForwardController.java` 생성
-4. 초기 빌드 + Tomcat 배포 확인 후 Phase 1 착수
+1. Eclipse WTP → Tomcat Clean + Publish + Restart
+2. Tomcat에서 `GET /rays/ui/` → 200 확인
+3. Phase 1 (인벤토리) 착수 — JSP/API/컨트롤러 매핑 전체 목록 작성
+   - 주의: 오케스트레이터가 Phase A PASS 후 Phase B를 미실행했음. 다음 세션에서 migration-agent를 명시적으로 호출해야 함.
+
+<!-- meta-agent added: 2026-03-16 -->
+[ ] 오케스트레이터 Phase A/B 구분 버그 확인 — orchestrator Step 2 SUCCESS 조건이 "Phase A PASS = 세션 완료"로 처리하는 문제. migration-agent 호출이 누락되지 않도록 next-session-manifest.json 및 오케스트레이터 흐름 점검 (수동 확인 필요)
 
 ---
 
@@ -126,7 +131,7 @@ Agents must update this file as tasks are completed.
 Before performing any change
 
 1. Read `AGENTS.md`
-2. Read `LATEST_STATE.md` (현재 Phase 0 — 선행 작업 진행 중)
+2. Read `LATEST_STATE.md` (현재 Phase 0 빌드 완료 — Tomcat 런타임 확인 후 Phase 1 착수)
 3. Read `automation/next-session-manifest.json`
 4. Read `TASK_BOARD.md`
 

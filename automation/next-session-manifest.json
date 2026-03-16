@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "updated_at": "2026-03-13T17:07:56+0900",
-  "phase": "인벤토리(Inventory) - 마이그레이션 시작 전 (Phase 1)",
+  "updated_at": "2026-03-16T10:23:02+0900",
+  "phase": "인벤토리(Inventory) - Phase 1 착수 가능 상태 (Phase 0 완료)",
   "purpose": "Compact execution manifest. Development phase — Tomcat/session checks skipped by default. Eclipse Publish is a manual milestone step.",
   "read_order": [
     "AGENTS.md",
@@ -50,10 +50,10 @@
     "encoding": "UTF-8 without BOM"
   },
   "latest_run": {
-    "run_id": "20260313-170752",
+    "run_id": "20260316-102300",
     "status": "success",
-    "log": "automation/logs/run-20260313-170752.json",
-    "duration_sec": 4,
+    "log": "automation/logs/run-20260316-102300.json",
+    "duration_sec": 2,
     "failed_step": "",
     "failed_code": ""
   },

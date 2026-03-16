@@ -149,3 +149,22 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 - Automation feedback: `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md`
 - Next session compact manifest: `automation/next-session-manifest.json`
 - Package output: `dist/migration-kit` only for offline handoff
+
+<!-- meta-agent added: 2026-03-16 -->
+## Phase A / Phase B 구분 체크 (Post-Run 필수)
+
+> `run-all.sh` N/N PASS는 Phase A(검증 단계) 통과를 의미한다. Phase B(migration-agent 실제 이관 작업) 실행 여부는 별도로 확인해야 한다.
+
+자동화 루프 종료 후 아래 항목을 순서대로 확인한다:
+
+1. `COMPLETION_REPORT.md` → "Phase State at Completion" 섹션 확인
+   - `Phase 2/3: 미착수` → Phase B migration-agent 미실행
+   - Phase 1 이후 항목이 완료 상태여야 실제 이관 작업이 진행된 것
+2. `LATEST_STATE.md` → 진행 단계가 "Inventory" 초기 상태이면 Phase B 미착수
+3. `TASK_BOARD.md` → Phase 1 이후 항목 체크 여부 확인
+
+오케스트레이터가 Phase A PASS를 세션 완료로 잘못 처리한 경우(6/6 PASS 후 즉시 COMPLETION 처리):
+- TASK_BOARD.md Phase 1 항목이 여전히 모두 `[ ]` 대기 상태
+- migration-agent를 명시적으로 호출하여 Phase 1 (인벤토리) 작업 재착수
+
+영문 요약: After run-all.sh PASS, always check COMPLETION_REPORT Phase State. If Phase 2/3 show as not started, Phase B migration-agent was never invoked — restart it explicitly next session.

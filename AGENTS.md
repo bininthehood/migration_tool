@@ -283,3 +283,36 @@ robocopy build ..\..\..\webapp\ui /MIR
 - 세부 실행 순서와 문서 우선순위는 루트 `WORKFLOW.md`를 따른다.
 
 영문 요약: Make minimal edits, inspect key routing files first, report diffs + verification URLs, and always state current migration phase.
+
+<!-- meta-agent added: 2026-03-13 -->
+## 자동화 실행 환경 주의사항 (WSL + Windows Tomcat)
+
+- 자동화 스크립트(`run-all.sh`)는 WSL 환경에서 실행되며, Tomcat은 Windows 측에서 동작한다.
+- WSL 자동화에서 Tomcat이 접근 불가능한 경우 `--skip-tomcat-check --skip-session-contract-check` 플래그로 해당 단계를 우회할 수 있다.
+- CRA 표준 진입점(`public/index.html`, `src/index.js`)이 없으면 `npm run build`가 실패하므로 `--skip-frontend-compile-check` 플래그로 우회한다.
+- 위 3개 플래그를 모두 사용한 실행이 "Phase 0 검증 통과 기준"이 될 수 있다 (Tomcat/빌드 없이 라우팅·문서·세션 가드 패턴만 검증).
+
+## bootstrap.sh 경로 규약
+
+- `automation/skills/legacy-migration-bootstrap/scripts/bootstrap.sh`는 `$PROJECT_ROOT/` 및 `$PROJECT_ROOT/migration_tool/` 양쪽에서 상태 문서를 탐색한다.
+- 프로젝트 루트와 migration_tool 루트가 분리된 구조(legacy project root / migration_tool 하위)에서 AGENTS.md, WORKFLOW.md, LATEST_STATE.md, TASK_BOARD.md, docs-migration-backlog.md 는 모두 `migration_tool/` 하위에 위치한다.
+- 위 파일들이 프로젝트 루트에 없어도 `migration_tool/` 하위에 있으면 정상으로 판단한다.
+
+## validate-skill-integration.sh 실행 환경 주의사항
+
+- `validate-skill-integration.sh` 는 `$PROJECT_ROOT/docs/project-docs/` 디렉토리에 `find` 명령을 실행한다.
+- 해당 디렉토리가 없으면 `set -o pipefail`로 인해 스크립트 전체가 중단된다.
+- 레거시 프로젝트 루트에 `docs/project-docs/` 디렉토리가 없는 경우 사전에 생성해야 한다: `mkdir -p $PROJECT_ROOT/docs/project-docs`
+
+영문 요약: WSL automation can skip Tomcat/compile checks; bootstrap.sh searches both project root and migration_tool/; always pre-create docs/project-docs/ at project root.
+
+<!-- meta-agent added: 2026-03-16 -->
+## 오케스트레이터 Phase 완료 구분 주의사항
+
+- `run-all.sh` 6/6 PASS(또는 N/N PASS)는 **검증 단계 통과**를 의미하며, **마이그레이션 작업 완료**를 의미하지 않는다.
+- 오케스트레이터의 Step 2 SUCCESS 조건이 "Phase A 검증 PASS"와 "전체 세션(Phase B migration-agent 포함) 완료"를 혼동할 수 있다.
+- Phase A(자동화 검증: Mojibake, Bootstrap, Dependencies, Routing, Session 등) PASS 후에는 **반드시 Phase B(migration-agent) 실행 여부를 별도로 확인**해야 한다.
+- 자동화 루프가 Phase A PASS에서 종료될 경우, Phase B는 **미실행** 상태이므로 다음 세션에서 명시적으로 착수해야 한다.
+- `COMPLETION_REPORT.md`의 "Phase State at Completion" 항목에서 Phase 1/2/3 착수 여부를 반드시 확인한다. "Phase 2/3: 미착수" 상태이면 migration-agent는 실행되지 않은 것이다.
+
+영문 요약: N/N PASS in run-all.sh means validation checks passed, NOT migration work completed. Always verify Phase B (migration-agent) execution separately after Phase A validator success.

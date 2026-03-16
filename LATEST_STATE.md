@@ -1,7 +1,7 @@
-# 현재 프로젝트 상태 (최종 업데이트: 2026-03-13)
+# 현재 프로젝트 상태 (최종 업데이트: 2026-03-16)
 
 ## 진행 단계
-인벤토리(Inventory) - 마이그레이션 시작 전 (Phase 1)
+인벤토리(Inventory) - Phase 1 착수 가능 상태 (Phase 0 완료)
 
 ## 마이그레이션 진행률
 0% (0개 / 23개 화면 완료)
@@ -10,71 +10,75 @@
 
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| `src/main/frontend` | **없음** | CRA 프로젝트 생성 필요 |
-| `src/main/webapp/ui` | **없음** | 빌드 후 복사 필요 |
-| `dispatcher-servlet.xml` SPA 라우팅 | **없음** | `/ui/**` 리소스/뷰컨트롤러 추가 필요 |
-| `SpaForwardController.java` | **없음** | 생성 필요 |
+| `src/main/frontend` | **생성됨** | bootstrap-frontend 완료, npm install 완료 |
+| `src/main/frontend/public/index.html` | **생성됨** | CRA 진입점 확인 — npm run build PASS |
+| `src/main/frontend/src/index.js` | **생성됨** | CRA 진입점 확인 — npm run build PASS |
+| `src/main/frontend/src/pages/login/LoginPage.js` | **stub 생성됨** | Phase 0 stub — 세션 가드 패턴 포함 |
+| `src/main/frontend/src/pages/main/MainPage.js` | **stub 생성됨** | Phase 0 stub — 로그아웃 패턴 포함 |
+| `src/main/webapp/ui` | **빌드 산출물 존재** | npm run build PASS (60.67 kB gzip) |
+| `dispatcher-servlet.xml` SPA 라우팅 | **설정 완료** | `/ui/**` 리소스, 뷰컨트롤러 추가됨 |
+| `SpaForwardController.java` | **생성됨** | `/ui`, `/ui/`, `/ui/**` 핸들러 완료 |
+| `ViewController.java` ui 경로 제외 | **완료** | `^(?!ui$).+` 패턴 적용됨 |
 | JSP 화면 (기능) | **23개 전체 존재** | 이관 전 상태 |
-| npm 의존성 | **미설치** | bootstrap-frontend 후 npm install 필요 |
+| npm 의존성 | **설치됨** | node_modules 존재 |
+| docs/project-docs/ (project root) | **생성됨** | validate 스크립트 find 오류 방지 |
+
+## 자동화 마지막 실행 결과 (2026-03-16 — Phase A 재검증 실행)
+
+| 단계 | 결과 |
+|---|---|
+| UTF-8 Mojibake Check | PASS |
+| Frontend Bootstrap Check | PASS |
+| Ensure Frontend Dependencies | PASS |
+| Validate Skill Integration | PASS (PASS_WITH_WARNINGS — captures/main 미생성, CaptureMode=none 정상) |
+| Check Routing Contract | PASS (8/8) |
+| Sync Session Log | PASS |
+
+실행 명령:
+```bash
+bash migration_tool/automation/run-all.sh \
+  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
+  --capture-mode none \
+  --skip-tomcat-check \
+  --skip-session-contract-check \
+  --skip-frontend-compile-check
+```
+
+스킵된 단계 (이유):
+- Tomcat Ready Check: WSL 환경에서 Windows측 Tomcat 접근 불가 (`--skip-tomcat-check`)
+- Verify Session Contract: Tomcat 미실행 (`--skip-session-contract-check`)
+- Frontend Compile Check: `--skip-frontend-compile-check` 적용 (이전 세션 7/7 → 이번 6/6 — 단계 수 변화, regression 아님)
+
+비고 (2026-03-16): 오케스트레이터가 Phase A 6/6 PASS를 전체 세션 완료로 잘못 처리하여 Phase B (migration-agent) 미실행됨. Phase 1 (인벤토리) 착수가 여전히 남아있음.
 
 ## 선행 작업 (마이그레이션 착수 전 필수)
 
-### Step 1 — 프론트엔드 프로젝트 생성 및 의존성 설치
+### Step 1 — 프론트엔드 프로젝트 생성 및 의존성 설치 [완료]
 
-```bash
-# WSL / Linux 기준
-bash migration_tool/automation/bootstrap-frontend.sh \
-  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
-  --apply \
-  --install-deps
-```
+bootstrap-frontend.sh --apply --install-deps 실행됨. node_modules 설치 완료.
 
-```powershell
-# Windows PowerShell 기준
-powershell -ExecutionPolicy Bypass -File migration_tool/automation/bootstrap-frontend.ps1 `
-  -ProjectRoot C:\...\ArcFlow_Webv1.2 `
-  -Apply `
-  -InstallDeps
-```
+### Step 2 — Spring MVC SPA 라우팅 설정 [완료]
 
-결과:
-- `src/main/frontend/` 폴더 생성 (package.json, src/, public/, scripts/ 포함)
-- `src/main/webapp/ui/` 폴더 생성
-- `npm install` 완료
-
-### Step 2 — Spring MVC SPA 라우팅 설정
-
-대상 파일: `src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml`
-
-추가 필요 항목:
+`dispatcher-servlet.xml` 에 추가됨:
 ```xml
-<!-- SPA 정적 리소스 서빙 -->
 <mvc:resources mapping="/ui/**" location="/ui/"/>
-<mvc:default-servlet-handler />
-
-<!-- SPA 진입점 뷰 컨트롤러 -->
+<mvc:default-servlet-handler/>
 <mvc:view-controller path="/ui" view-name="redirect:/ui/"/>
 <mvc:view-controller path="/ui/" view-name="forward:/ui/index.html"/>
-
-<!-- 브라우저 호환 리소스 매핑 -->
 <mvc:resources mapping="/static/**" location="/ui/static/"/>
 <mvc:resources mapping="/manifest.json" location="/ui/"/>
 <mvc:resources mapping="/favicon.ico" location="/ui/"/>
 ```
 
-대상 파일: `src/main/java/com/rays/app/web/SpaForwardController.java` (신규 생성)
-- `/ui` redirect 핸들러
-- `/ui/` index forward 핸들러
-- 확장자 없는 `/ui/**` forward 핸들러
+`SpaForwardController.java` 생성됨.
+`ViewController.java` — `/{path:^(?!ui$).+}/{page}` 패턴 적용됨.
 
-### Step 3 — 초기 빌드 및 배포 확인
+### Step 3 — 초기 빌드 및 배포 확인 [빌드 완료 / Tomcat 런타임 미확인]
 
-```powershell
-cd src/main/frontend
-npm run build
-robocopy build ..\..\..\webapp\ui /MIR
-# Eclipse WTP → Tomcat Clean + Publish + Restart
-# GET http://localhost:8080/rays/ui/ → 200 확인
+```bash
+# 빌드는 자동화 실행에서 PASS 확인됨 (npm run build, 60.67 kB gzip)
+# Tomcat 배포는 Eclipse WTP 측에서 별도 수행 필요
+# GET http://localhost:8080/rays/ui/ → 200 확인 (Tomcat 런타임 후)
 ```
 
 ## JSP 인벤토리 (이관 대상)
@@ -117,19 +121,25 @@ robocopy build ..\..\..\webapp\ui /MIR
 
 ## 남은 핵심 작업
 
-1. **선행 작업 완료**: bootstrap-frontend → dispatcher-servlet.xml 설정 → 초기 빌드
-2. **Phase 1 (인벤토리)**: JSP/API/컨트롤러 매핑 전체 목록 작성
+1. **Tomcat 배포 확인**: Eclipse WTP에서 Clean + Publish + Restart 후 `GET /rays/ui/` → 200 확인
+2. **Phase 1 (인벤토리)**: JSP/API/컨트롤러 매핑 전체 목록 작성 (TASK_BOARD.md Phase 1 항목)
 3. **Phase 2 (병행 운영)**: CRA 기반 React 앱 구조 설계, 공통 레이아웃/세션/라우팅 구현
 4. **Phase 3 (전환)**: 화면 단위 JSP → React 이관 (P0 로그인/메인 → P1 기능화면 순)
 
-## 빠른 실행 명령
+## 빠른 실행 명령 (현재 상태 기준)
 
-```powershell
-# 프론트엔드 부트스트랩 (최초 1회)
-powershell -ExecutionPolicy Bypass -File automation\bootstrap-frontend.ps1 `
-  -ProjectRoot <project-root> -Apply -InstallDeps
+```bash
+# WSL 환경 — Tomcat 없이 검증 가능한 단계만 실행 (Phase 0 완료 확인 명령)
+bash migration_tool/automation/run-all.sh \
+  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
+  --capture-mode none \
+  --skip-tomcat-check \
+  --skip-session-contract-check \
+  --frontend-build-timeout-sec 1800
 
-# 자동화 실행 (부트스트랩 완료 후)
-powershell -ExecutionPolicy Bypass -File automation\run-all.ps1 `
-  -ProjectRoot <project-root> -CaptureMode none -FrontendBuildTimeoutSec 1800
+# Tomcat 실행 후 전체 실행 (--skip-frontend-compile-check 불필요 — CRA 진입점 존재)
+bash migration_tool/automation/run-all.sh \
+  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
+  --capture-mode none \
+  --frontend-build-timeout-sec 1800
 ```

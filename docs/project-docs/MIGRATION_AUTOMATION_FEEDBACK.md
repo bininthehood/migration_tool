@@ -38,3 +38,63 @@ COMPLETION — exit code 0, all steps PASS (with skip flags)
 ### Unresolved issues
 - CRA 진입점 파일 없음 (`public/index.html`, `src/index.js`) → 자동화에서 직접 생성 예정
 - Tomcat WSL 접근: Windows 호스트 IP(`172.26.208.1:8080`) 경유 시 접근 가능 — `--tomcat-base-url` 플래그 활용 예정
+
+---
+
+## Run Summary — 2026-03-13 (Phase 0 완료 확인 실행)
+
+### Termination reason
+COMPLETION — exit code 0, all 7 steps PASS, first attempt
+
+### Run stats
+- Total runs: 1
+- pass_history: [7]
+- Final PASS/FAIL/SKIP: 7/0/0
+- Run 1: PASS — exit 0, 7/7 steps (이전 세션 unresolved issues 해결됨)
+
+### Patterns observed
+- **CRA 진입점 해결 확인**: `public/index.html` 및 `src/index.js` 생성됨. `Frontend Compile Check` PASS (60.67 kB gzip). `--skip-frontend-compile-check` 플래그 불필요.
+- **Phase 0 완료**: 이번 실행에서 7/7 steps PASS. 이전 unresolved issue(CRA 진입점 없음)가 해결됨.
+- **captures/main 미생성 경고**: `Validate Skill Integration` 단계에서 `captures/main` 디렉토리 없음 경고 발생. `CaptureMode=none` dev 환경에서 정상 — 비크리티컬.
+- **Tomcat 스킵 패턴 유지**: `--skip-tomcat-check --skip-session-contract-check` 플래그는 WSL 환경에서 계속 필요. Tomcat 런타임 검증은 Eclipse WTP milestone_flow로 별도 수행.
+
+### Documents updated
+- `AGENTS.md`: 변경 없음 (신규 패턴 없음)
+- `WORKFLOW.md`: 변경 없음
+- `LATEST_STATE.md`: CRA 진입점 및 빌드 완료 반영, 실행 명령 업데이트, 남은 작업 재정리
+- `TASK_BOARD.md`: Phase 0 CRA 진입점 및 빌드 항목 체크 완료, Current Priority 업데이트
+
+### Unresolved issues
+- Tomcat 런타임 확인 미완: `GET /rays/ui/` → 200 확인이 아직 수행되지 않음. Eclipse WTP → Tomcat Publish 후 milestone_flow 실행 필요.
+- Tomcat WSL 접근 문제 여전히 미해결: `--skip-tomcat-check` 플래그로 우회 중. `--tomcat-base-url` 활용 방안은 검토 중.
+
+---
+
+## Run Summary — 2026-03-16
+
+### Termination reason
+COMPLETION — exit code 0, Phase A 6/6 PASS (--skip-frontend-compile-check 적용)
+
+### Run stats
+- Total runs: 1
+- pass_history: [6]
+- Final PASS/FAIL/SKIP: 6/0/0
+- Run 1: PASS — exit 0, 6/6 steps (skip flags: --skip-tomcat-check --skip-session-contract-check --skip-frontend-compile-check)
+
+### Patterns observed
+- **오케스트레이터 Phase A/B 혼동 버그**: orchestrator Step 2 SUCCESS 조건이 Phase A(검증 단계) 6/6 PASS를 전체 세션 완료로 잘못 처리함. Phase B(migration-agent — Phase 1 인벤토리 작업)가 미실행된 채 세션이 종료됨.
+  - 증상: COMPLETION_REPORT의 "Phase State at Completion"에 "Phase 2/3: 미착수" 명시, TASK_BOARD.md Phase 1 항목 전체 여전히 `[ ]` 대기 상태.
+  - 원인: run-all.sh N/N PASS = "검증 통과" 이지만 오케스트레이터가 이를 "마이그레이션 작업 완료"로 판단.
+  - 대응: 다음 세션에서 migration-agent를 명시적으로 호출하여 Phase 1 착수.
+- **--skip-frontend-compile-check 정상 적용 확인**: 이전 세션 7/7 → 이번 6/6 단계 수 변화는 Frontend Compile Check 단계 제거 때문이며 regression 아님.
+
+### Documents updated
+- `AGENTS.md`: 오케스트레이터 Phase A/B 구분 주의사항 섹션 추가
+- `WORKFLOW.md`: Phase A/Phase B 구분 체크 Post-Run 절차 추가
+- `LATEST_STATE.md`: 2026-03-16 실행 결과 반영, Phase B 미실행 사실 기록
+- `TASK_BOARD.md`: 오케스트레이터 버그 확인 태스크 추가, Current Priority 업데이트
+
+### Unresolved issues
+- **Phase B migration-agent 미실행**: Phase 1 (인벤토리) 작업이 여전히 미착수. 다음 세션에서 migration-agent를 명시적으로 호출해야 함.
+- **오케스트레이터 Step 2 SUCCESS 조건**: Phase A PASS와 Phase B 완료를 구분하지 못하는 구조적 문제. 자동화 스크립트 수준의 수정이 필요하나 meta-agent 권한 밖 — 수동 확인 필요.
+- Tomcat 런타임 확인 미완: `GET /rays/ui/` → 200 확인이 아직 수행되지 않음.
