@@ -26,6 +26,23 @@ echo "migration_tool_root_linux: $(pwd)"
 - 직전 run_id, status, failed_step (있는 경우)
 - Phase A 스킵 가능 여부 (직전 success + 핵심 파일 변경 없음)
 
+## Step 1.5 — bootstrap-frontend 자동 실행 (필요 시)
+
+`next-session-manifest.json`의 `setup_required.frontend_dir_missing == true` 이면:
+
+```bash
+bash {migration_tool_root}/automation/bootstrap-frontend.sh \
+  --project-root {project_root} \
+  --apply \
+  --install-deps
+```
+
+실행 후 `next-session-manifest.json`의 `setup_required.frontend_dir_missing`을 `false`로 업데이트합니다.
+
+실패 시: 사용자에게 보고하고 중단. (npm 미설치, 권한 문제 등 환경 문제일 가능성 높음)
+
+`frontend_dir_missing == false` 이면: 이 단계를 건너뜁니다.
+
 ## Step 2 — 인자 처리
 
 인자: $ARGUMENTS
