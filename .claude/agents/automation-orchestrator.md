@@ -301,7 +301,7 @@ Then ask the user:
 
 On approval → return to Step 1
 On changes  → pass user feedback to dev-agent as additional context, re-invoke (keep run_count)
-On stop     → write final status report, then invoke meta-agent
+On stop     → proceed to Phase C (COMPLETION_REPORT + meta-agent)
 
 ---
 
@@ -365,41 +365,54 @@ On 3 → invoke meta-agent, stop
 
 ### Step C1 — Write COMPLETION_REPORT
 
-Write `{project_root}/COMPLETION_REPORT.md`.
+Write `{project_root}/COMPLETION_REPORT.md`:
+
+```
+# COMPLETION_REPORT
+
+## Result: SUCCESS
+- Total runs: N
+- Final PASS/Total: N/N
+
+## Migration Tasks Implemented
+| Task | Phase | Files |
+|------|-------|-------|
+
+## Fix History
+| Run | Modified Files | Result |
+|-----|---------------|--------|
+
+## Final Step Status
+<all steps PASS list>
+```
 
 ### Step C2 — Invoke meta-agent
 
-Invoke meta-agent ONLY IF migration_tasks_implemented OR previous_fixes is non-empty.
+Invoke meta-agent ONLY IF `migration_tasks_implemented` OR `previous_fixes` is non-empty.
+If both are empty (인프라 검증만 통과, 코드 변경 없음): skip meta-agent, report to user directly.
 
-## Meta-agent Invocation
+Pass the following context:
 
-Invoke meta-agent when loop terminates for ANY of these reasons:
-- COMPLETION (all tests pass)
-- LIMIT REACHED (run_count exceeded or no improvement)
-- User manually stops (option 3 in review)
-
-Pass the following context to meta-agent:
-
+```json
 {
   "termination_reason": "completion | limit_reached | user_stopped",
   "project_root": "{project_root}",
   "migration_tool_root": "{migration_tool_root}",
   "run_stats": {
-    "run_count": <run_count>,
-    "pass_history": <pass_history>,
-    "final_pass": <last pass count>,
-    "final_total": <last total step count>
+    "run_count": "<run_count>",
+    "pass_history": "<pass_history>",
+    "final_pass": "<last pass count>",
+    "final_total": "<last total step count>"
   },
   "artifacts": {
-    "completion_report": "{project_root}\\COMPLETION_REPORT.md",
-    "limit_report": "{project_root}\\AUTOMATION_LIMIT_REPORT.md",
-    "bug_report": "{project_root}\\BUG_REPORT.md",
-    "fix_report": "{project_root}\\FIX_REPORT.md",
-    "orchestrator_state": "{migration_tool_root}\\automation\\logs\\orchestrator-state.json"
+    "completion_report": "{project_root}/COMPLETION_REPORT.md",
+    "bug_report": "{project_root}/BUG_REPORT.md",
+    "fix_report": "{project_root}/FIX_REPORT.md"
   },
-  "previous_fixes": <previous_fixes list>,
-  "migration_tasks_implemented": <migration_tasks_implemented list>
+  "previous_fixes": "<previous_fixes list>",
+  "migration_tasks_implemented": "<migration_tasks_implemented list>"
 }
+```
 
 Wait for meta-agent to complete before ending the session.
 
