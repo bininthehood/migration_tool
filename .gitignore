@@ -42,4 +42,11 @@ src/main/webapp/resources/component/Highcharts/api.zip
 # Project-specific docs (generated per-project, not reusable templates)
 docs/project-docs/docs-migration-inventory.md
 docs/project-docs/docs-main-*.md
+docs/project-docs/ENDPOINT_MAP.md
+docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md
+
+# Project-specific runtime state (generated per-project by automation)
+LATEST_STATE.md
+TASK_BOARD.md
+automation/next-session-manifest.json
 
