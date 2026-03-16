@@ -69,9 +69,40 @@ Phase C: 완료 보고
 
 ## Phase A — 인프라 게이트
 
-### Step 0 — Dev Server Start
+### Step 0 — Phase A Skip Check
 
-**Before starting**: Write orchestrator-progress.md (현재 상태: "Step 0 — dev 서버 시작 중")
+**Before starting**: Write orchestrator-progress.md (현재 상태: "Step 0 — Phase A 스킵 여부 확인 중")
+
+Read `{migration_tool_root}/automation/next-session-manifest.json`.
+
+**Skip Phase A entirely** if ALL of the following are true:
+- `latest_run.status == "success"`
+- `latest_run.failed_step == ""`
+- None of these files changed since `latest_run.run_id` timestamp:
+  - `src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml`
+  - `src/main/java/**/SpaForwardController.java`
+  - `src/main/java/**/ViewController.java`
+  - `src/main/frontend/package.json`
+  - `migration_tool/automation/run-all.sh`
+
+Check file modification times with:
+```bash
+find {project_root}/src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml \
+  {project_root}/src/main/frontend/package.json \
+  -newer {migration_tool_root}/automation/logs/run-$(cat {migration_tool_root}/automation/next-session-manifest.json | grep run_id | head -1 | tr -d '", ' | cut -d: -f2).json \
+  2>/dev/null | head -5
+```
+If the find returns no output → skip Phase A → jump directly to **Dev Server Start** then **Phase B**.
+
+If skip conditions NOT met → proceed to Step 1.
+
+Write orchestrator-progress.md (현재 상태: "Step 0 완료 — Phase A 스킵: [yes/no]")
+
+---
+
+### Step 0.5 — Dev Server Start
+
+**Before starting**: Write orchestrator-progress.md (현재 상태: "Step 0.5 — dev 서버 시작 중")
 
 Check if `:3000` is already listening:
 ```bash
@@ -87,15 +118,13 @@ If it doesn't start: report `FRONTEND_DEVSERVER_START_FAIL` to user and stop.
 
 If already running: proceed immediately.
 
-Write orchestrator-progress.md (현재 상태: "Step 0 완료 — dev 서버 :3000 실행 중")
+Write orchestrator-progress.md (현재 상태: "Step 0.5 완료 — dev 서버 :3000 실행 중")
 
 ---
 
 ### Step 1 — Run (Infrastructure Gate, once)
 
 **Before executing**: Write orchestrator-progress.md (현재 상태: "Step 1 — 인프라 게이트 실행 중", 현재 조치: "run-all.sh 실행 중 — 완료까지 대기")
-
-**Before executing**: Write orchestrator-progress.md (현재 상태: "Step 1 — 테스트 실행 중", 현재 조치: "run-all.sh 실행 중 — 완료까지 대기")
 
 Read `{migration_tool_root}\automation\next-session-manifest.json` to get the run command (`preferred_flow.command` or `fallback_flow.command`).
 Replace any hardcoded path in the command with the actual `migration_tool_root` value before executing.
