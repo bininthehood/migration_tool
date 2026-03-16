@@ -2,7 +2,7 @@
 name: meta-agent
 description: "Invoke this agent only after automation-orchestrator terminates with COMPLETION_REPORT or AUTOMATION_LIMIT_REPORT.\n\nDo NOT invoke during an active automation loop.\n\nThis agent reads run artifacts (BUG_REPORT, FIX_REPORT, orchestrator-state.json, run-*.json) and improves project documents (AGENTS.md, WORKFLOW.md, LATEST_STATE.md, TASK_BOARD.md) based on patterns observed during the run."
 tools: Glob, Grep, Read, Write, Edit, Skill
-model: sonnet
+model: haiku
 color: purple
 ---
 

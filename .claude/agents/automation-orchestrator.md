@@ -2,7 +2,7 @@
 name: automation-orchestrator
 description: "Use this agent to run the full automation test loop.\nInvoke this agent when the user wants to start or resume\nautomated test-fix cycles for the project."
 tools: Bash, Write, Glob, Grep, Read
-model: sonnet
+model: haiku
 color: blue
 ---
 
