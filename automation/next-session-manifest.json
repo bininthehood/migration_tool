@@ -1,7 +1,7 @@
 {
   "format_version": 1,
-  "updated_at": "2026-03-16T10:23:02+0900",
-  "phase": "인벤토리(Inventory) - Phase 1 착수 가능 상태 (Phase 0 완료)",
+  "updated_at": "YYYY-MM-DDT00:00:00+0900",
+  "phase": "인벤토리(Inventory) — Phase 0 미착수",
   "purpose": "Compact execution manifest. Development phase — Tomcat/session checks skipped by default. Eclipse Publish is a manual milestone step.",
   "read_order": [
     "AGENTS.md",
@@ -12,7 +12,7 @@
   "dev_workflow": {
     "description": "During React migration (Phase 1-3), automation targets :3000 dev server. Eclipse Publish + :8080 verification is a manual milestone check.",
     "automation_target": "http://localhost:3000",
-    "milestone_check": "http://172.26.208.1:8080 — manual Eclipse Publish required"
+    "milestone_check": "http://<tomcat-host>:<port>/<context-path> — manual Eclipse Publish required"
   },
   "preferred_flow": {
     "id": "dev_validation",
@@ -20,7 +20,7 @@
     "command": "bash migration_tool/automation/run-all.sh --project-root <project-root> --capture-mode none --skip-tomcat-check --skip-session-contract-check --skip-frontend-compile-check",
     "requires_elevation": false,
     "base_url": "http://localhost:3000",
-    "context_path": "/rays",
+    "context_path": "/<context-path>",
     "success_criteria": [
       "UTF-8 Mojibake Check success",
       "Frontend Bootstrap Check success",
@@ -37,32 +37,35 @@
   },
   "milestone_flow": {
     "id": "tomcat_runtime_capture",
-    "description": "Run manually after Eclipse Publish to verify :8080 deployment.",
-    "command": "bash migration_tool/automation/run-all.sh --project-root <project-root> --capture-mode preset --capture-preset all --tomcat-base-url http://172.26.208.1:8080 --frontend-build-timeout-sec 1800",
+    "description": "Run manually after Eclipse Publish to verify deployment.",
+    "command": "bash migration_tool/automation/run-all.sh --project-root <project-root> --capture-mode preset --capture-preset all --tomcat-base-url http://<tomcat-host>:<port> --frontend-build-timeout-sec 1800",
     "requires_elevation": true,
     "use_when": "After Eclipse Publish at migration milestones (e.g. phase cutover, QA review)."
   },
   "environment": {
-    "tomcat_base_url": "http://172.26.208.1:8080",
-    "tomcat_context_path": "/rays",
+    "tomcat_base_url": "http://<tomcat-host>:<port>",
+    "tomcat_context_path": "/<context-path>",
     "dev_server_url": "http://localhost:3000",
     "frontend_dev_port": 3000,
     "encoding": "UTF-8 without BOM"
   },
+  "setup_required": {
+    "frontend_dir_missing": true,
+    "note": "Run bootstrap-frontend.sh --apply --install-deps before automation."
+  },
   "latest_run": {
-    "run_id": "20260316-102300",
-    "status": "success",
-    "log": "automation/logs/run-20260316-102300.json",
-    "duration_sec": 2,
+    "run_id": "",
+    "status": "not_run",
+    "log": "",
+    "duration_sec": 0,
     "failed_step": "",
     "failed_code": ""
   },
   "known_constraints": [
-    "Tomcat runs on Windows; WSL automation accesses it via 172.26.208.1:8080.",
+    "Tomcat runs on Windows; WSL automation accesses it via Windows host IP.",
     "Eclipse Publish is required to sync webapp/ui/ to the running Tomcat instance — this is a manual milestone step.",
     "UTF-8 mojibake preflight blocks corrupted Hangul before build/doc sync.",
-    "Playwright capture requires elevated permission (spawn EPERM risk in sandbox).",
-    "src/main/frontend exists and npm install is complete — bootstrap-frontend already run."
+    "Playwright capture requires elevated permission (spawn EPERM risk in sandbox)."
   ],
   "post_run_updates": [
     "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md",

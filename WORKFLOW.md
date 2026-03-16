@@ -55,33 +55,29 @@ Read in this order:
 
 Preferred command (Phase 0 완료 후):
 
-```powershell
-powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 `
-  -ProjectRoot <legacy-project-root> `
-  -TomcatControlAction restart `
-  -MigrateBatch all `
-  -CaptureMode preset `
-  -CapturePreset all `
-  -CaptureBaseUrl http://localhost:8080 `
-  -DisableAutoInstallFrontendDeps `
-  -SkipReactFunctionCommenting
+```bash
+bash migration_tool/automation/run-all.sh \
+  --project-root <legacy-project-root> \
+  --capture-mode none \
+  --skip-tomcat-check \
+  --skip-session-contract-check \
+  --skip-frontend-compile-check
 ```
 
-Fallback command:
+Milestone command (Eclipse Publish 후 전체 검증):
 
-```powershell
-powershell -ExecutionPolicy Bypass -File automation/run-all.ps1 `
-  -ProjectRoot <legacy-project-root> `
-  -TomcatControlAction restart `
-  -MigrateBatch all `
-  -CaptureMode none `
-  -DisableAutoInstallFrontendDeps `
-  -SkipReactFunctionCommenting
+```bash
+bash migration_tool/automation/run-all.sh \
+  --project-root <legacy-project-root> \
+  --capture-mode preset \
+  --capture-preset all \
+  --tomcat-base-url http://<tomcat-host>:<port> \
+  --frontend-build-timeout-sec 1800
 ```
 
 Operational notes:
-- Default verification path is Tomcat runtime `http://localhost:8080/rays/ui/...`.
-- `localhost:3000` is a secondary dev-only route, not the primary automation target.
+- Preferred command: dev 서버 `:3000` 대상, Tomcat 없이 검증 가능한 단계만 실행.
+- Milestone command: Eclipse WTP Publish 후 Tomcat 런타임 전체 검증.
 - Capture-including runs should be treated as elevated-permission runs because Playwright may fail with `spawn EPERM` in sandboxed execution.
 - All docs and source files must remain UTF-8 without BOM.
 
@@ -106,8 +102,8 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 3. Confirm routing contract files:
    - `src/main/webapp/WEB-INF/web.xml`
    - `src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml`
-   - `src/main/java/com/rays/app/web/SpaForwardController.java`
-   - `src/main/java/com/rays/app/view/controller/ViewController.java`
+   - `src/main/java/<package>/SpaForwardController.java`
+   - `src/main/java/<package>/ViewController.java`
 3. Check UTF-8 and mojibake risk first.
 4. Use `automation/next-session-manifest.json` as the command source of truth.
 5. Treat git checkout/pull in the target project root as the default delivery path.
@@ -115,8 +111,8 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 ## Main Pipeline
 
 1. Restore context from `automation/next-session-manifest.json` and `LATEST_STATE.md`.
-2. Run `automation/run-all.ps1` with Tomcat runtime capture by default.
-3. If capture permission is blocked, rerun with `-CaptureMode none` and keep the failure classified.
+2. Run `automation/run-all.sh` with preferred_flow command from `next-session-manifest.json`.
+3. If capture permission is blocked, rerun with `--capture-mode none` and keep the failure classified.
 4. Review:
    - `automation/logs/run-*.json`
    - `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md`
@@ -127,13 +123,13 @@ Keep session startup deterministic and low-overhead for AI execution while prese
    - `docs/project-docs/SESSION_WORKLOG_*.md`
    - `automation/next-session-manifest.json`
 6. Optional package:
-   - Only when offline delivery is required, run `powershell -ExecutionPolicy Bypass -File automation/package-migration-kit.ps1 -ProjectRoot <root>`
+   - Only when offline delivery is required, run `bash automation/package-migration-kit.sh --project-root <root>`
 
 ## Verification Rules
 
-- `GET /rays/ui` redirects to `/rays/ui/`
-- `GET /rays/ui/` returns `200`
-- `GET /rays/ui/<deep-route>` returns `200`
+- `GET /<context-path>/ui` redirects to `/<context-path>/ui/`
+- `GET /<context-path>/ui/` returns `200`
+- `GET /<context-path>/ui/<deep-route>` returns `200`
 - Session contract order:
   - `policyCheck`
   - `sessionAlive`
