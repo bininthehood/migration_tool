@@ -155,9 +155,24 @@ Phase B 완료. :3000에서 구현 결과를 확인해 주세요.
 
 ## Step 6 — Phase C: meta-agent (문서 업데이트)
 
-`migration_tasks_implemented` AND `previous_fixes` 모두 비어있으면 meta-agent를 스킵하고 직접 보고합니다.
+아래 조건 중 하나라도 해당하면 meta-agent를 **스킵**하고 next-session-manifest.json의 `latest_run`만 직접 업데이트합니다:
 
-그 외: meta-agent를 호출합니다.
+- `migration_tasks_implemented` AND `previous_fixes` 모두 비어있음 (Phase A PASS만 있고 변경 없음)
+- 사용자가 Step 5에서 "3. 중단"을 선택함
+
+스킵 시 next-session-manifest.json 업데이트:
+```json
+"latest_run": {
+  "run_id": "{YYYYMMDD-HHMMSS}",
+  "status": "success",
+  "log": "",
+  "duration_sec": 0,
+  "failed_step": "",
+  "failed_code": ""
+}
+```
+
+그 외 (구현된 태스크 또는 수정된 코드가 있는 경우): meta-agent를 호출합니다.
 
 Agent 도구 사용:
 ```
