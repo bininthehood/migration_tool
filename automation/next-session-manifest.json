@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "updated_at": "YYYY-MM-DDT00:00:00+0900",
+  "updated_at": "2026-03-16T16:57:25+0900",
   "phase": "인벤토리(Inventory) — Phase 0 미착수",
   "purpose": "Compact execution manifest. Development phase — Tomcat/session checks skipped by default. Eclipse Publish is a manual milestone step.",
   "read_order": [
@@ -50,14 +50,14 @@
     "encoding": "UTF-8 without BOM"
   },
   "setup_required": {
-    "frontend_dir_missing": true,
+    "frontend_dir_missing": false,
     "note": "Run bootstrap-frontend.sh --apply --install-deps before automation."
   },
   "latest_run": {
-    "run_id": "",
-    "status": "not_run",
-    "log": "",
-    "duration_sec": 0,
+    "run_id": "20260316-165724",
+    "status": "success",
+    "log": "automation/logs/run-20260316-165724.json",
+    "duration_sec": 1,
     "failed_step": "",
     "failed_code": ""
   },

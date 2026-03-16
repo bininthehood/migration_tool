@@ -220,3 +220,14 @@
 - `COMPLETION_REPORT.md`의 "Phase State at Completion" 항목에서 Phase 1/2/3 착수 여부를 반드시 확인한다. "Phase 2/3: 미착수" 상태이면 migration-agent는 실행되지 않은 것이다.
 
 영문 요약: N/N PASS in run-all.sh means validation checks passed, NOT migration work completed. Always verify Phase B (migration-agent) execution separately after Phase A validator success.
+
+<!-- meta-agent added: 2026-03-16 -->
+## 검증 통과 후 수동 단계 (Human Gate)
+
+- Phase A 검증(8/8 PASS) 통과 후 Phase 3 화면 마이그레이션을 시작하기 전에 반드시 다음 2가지 수동 단계를 완료해야 한다:
+  1. `cd src/main/frontend && npm run build` 실행 → `../webapp/ui/` 빌드 산출물 생성
+  2. Eclipse WTP 재배포 후 `GET /<context-path>/ui/` → 200 응답 확인
+- 이 2단계는 WSL 자동화 환경에서 수행 불가능하며(Windows Tomcat 접근 제약), 인프라 일관성 보증을 위해 수동 확인이 필수이다.
+- TASK_BOARD.md의 Phase 0 마지막 항목 `[ ] GET /<context-path>/ui/ → 200 확인` 완료까지 기다린 후 Phase 3 착수.
+
+영문 요약: After Phase A PASS, perform npm build and Tomcat verification manually before starting Phase 3 migration.

@@ -9,3 +9,36 @@ Keep only the last 3 sessions. Older entries are archived in git history.
 - The compact machine-readable entry point for the next session is `automation/next-session-manifest.json`.
 
 ---
+
+## Run Summary — 2026-03-16 (Run 20260316-165724)
+
+### Termination reason
+COMPLETION — All Phase A validation checks passed (8/8)
+
+### Run stats
+- Total runs: 3
+- Final PASS: 8/8
+- Validation stages: Phase A complete
+- Previous attempt results: 2 successful fixes (UTF-8 mojibake + SPA routing)
+
+### Patterns observed
+- Phase A validation loop converged in 3 runs
+- UTF-8 encoding issues were critical early failures (fixed attempt 1)
+- SPA routing infrastructure validation completed successfully (fixed attempt 2)
+- All routing contract checks now pass: dispatcher-servlet.xml, SpaForwardController.java, ViewController.java regex patterns
+
+### Documents updated
+- LATEST_STATE.md: Added Phase A completion timestamp and validation result (8/8)
+- TASK_BOARD.md: Marked npm run build and Tomcat verification as in-progress [~] (awaiting human execution)
+- AGENTS.md: No additions required (existing rules cover validation scenarios)
+- WORKFLOW.md: No additions required (existing startup checklist sufficient)
+
+### Unresolved issues
+- Initial `npm run build` execution: Requires human manual run in src/main/frontend directory before Phase 3 begins
+- Tomcat verification: Requires Eclipse WTP publish and GET /<context-path>/ui/ → 200 check (cannot be automated in WSL environment)
+- Phase 3 readiness: All prerequisites for screen migration now met; migration-agent can begin Phase 1 inventory / Phase 2 React integration tasks on next run
+
+### Next steps
+1. Execute `cd src/main/frontend && npm run build` to generate ../webapp/ui build artifacts
+2. Publish to Eclipse WTP and verify GET /<context-path>/ui/ returns 200
+3. Begin Phase 3 migration-agent run to start JSP → React screen conversion (starting with login.jsp → Login.jsx)

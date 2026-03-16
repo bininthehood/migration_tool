@@ -164,3 +164,20 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 - migration-agent를 명시적으로 호출하여 Phase 1 (인벤토리) 작업 재착수
 
 영문 요약: After run-all.sh PASS, always check COMPLETION_REPORT Phase State. If Phase 2/3 show as not started, Phase B migration-agent was never invoked — restart it explicitly next session.
+
+<!-- meta-agent added: 2026-03-16 -->
+## Human Gate: npm build + Tomcat Verification
+
+Phase A PASS 후, Phase 3 화면 마이그레이션 착수 전에:
+
+1. Human manual action: `cd src/main/frontend && npm run build`
+   - 빌드 산출물이 `../webapp/ui/` 디렉토리에 생성되는지 확인
+   - 빌드 오류 없이 완료되어야 다음 단계 진행 가능
+2. Human manual action: Eclipse WTP 재배포 (또는 수동 Tomcat restart)
+3. Verification: `GET http://localhost:<port>/<context-path>/ui/` → 200 응답 확인
+   - 200 응답이 아닌 경우 dispatcher-servlet.xml 또는 빌드 산출물 상태 재점검
+4. TASK_BOARD.md 최하단 항목 완료 표시: `[x] GET /<context-path>/ui/ → 200 확인`
+
+이 단계가 완료되어야만 migration-agent가 Phase 3 화면 마이그레이션을 안전하게 시작할 수 있다.
+
+영문 요약: After Phase A PASS, manually build frontend, redeploy Tomcat, verify /ui/ → 200, then mark TASK_BOARD complete before starting Phase 3 migration-agent.

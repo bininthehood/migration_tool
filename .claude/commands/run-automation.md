@@ -51,6 +51,27 @@ bash {migration_tool_root}/automation/bootstrap-frontend.sh \
 
 `frontend_dir_missing == false` 이면: 이 단계를 건너뜁니다.
 
+## Step 1.6 — Dev Server 기동 (필요 시)
+
+포트 3000이 응답하지 않으면 Windows Terminal 새 탭으로 `npm start`를 띄웁니다.
+
+```bash
+# 포트 확인
+if ! nc -z localhost 3000 2>/dev/null && ! ss -ltn 2>/dev/null | grep -q ':3000 '; then
+  # wt.exe로 새 Ubuntu 탭에서 npm start 실행
+  wt.exe new-tab --profile Ubuntu -- bash -c \
+    "cd {project_root_linux}/src/main/frontend && npm start; exec bash"
+  # 최대 60초 대기
+  for i in $(seq 1 30); do
+    sleep 2
+    nc -z localhost 3000 2>/dev/null && break
+  done
+fi
+```
+
+- `wt.exe`가 없으면 건너뜁니다 (사용자가 수동으로 띄운 것으로 간주).
+- 60초 후에도 포트가 열리지 않으면 경고만 출력하고 계속 진행합니다 (Phase A 검증은 :3000 불필요).
+
 ## Step 2 — 인자 처리
 
 인자: $ARGUMENTS

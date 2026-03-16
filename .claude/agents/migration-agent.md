@@ -115,6 +115,33 @@ root.render(
 
 ---
 
+#### PHASE 1 — Project Analysis (JSP Inventory → TASK_BOARD Auto-populate)
+
+After completing "Identify legacy JSP UI structure" task:
+
+1. Glob actual JSP files: `{project_root}/src/main/webapp/WEB-INF/jsp/**/*.jsp` (or `/views/**/*.jsp`)
+2. For each JSP file found, derive:
+   - JSP path (relative to `WEB-INF/jsp/` or `WEB-INF/views/`)
+   - React component name (PascalCase + `Page.jsx`)
+   - React route path (`/ui/{category}/{name}`)
+   - Category from directory structure
+3. **Replace the Phase 3 section in TASK_BOARD.md** with auto-generated `[ ]` tasks:
+
+```
+[ ] `{jsp_relative_path}` → `src/pages/{category}/{ComponentName}.jsx` (`/ui/{route}`)
+```
+
+Rules:
+- One `[ ]` line per JSP file
+- Popup/download JSPs → append `(팝업 — 별도 처리)` suffix
+- Skip files that are `inc_*.jsp`, `common*.jsp`, or in `/common/` subdirectory (fragments, not screens)
+- Sort order: login → main → grouped by category (dashboard, listen, logs, manage, recorder, system, approve, view)
+- After writing, update `phase3_screens_total` in TASK_BOARD and LATEST_STATE.md
+
+This ensures Phase 3 tasks are always derived from the **actual project files**, not manually written.
+
+---
+
 #### PHASE 2 — React Foundations
 
 Create these files if they don't exist. Do NOT overwrite if already present.
