@@ -21,7 +21,16 @@ You receive the following values from the invoking prompt:
 Frontend root: `{project_root}/src/main/frontend`
 Webapp UI root: `{project_root}/src/main/webapp/ui`
 
-## Step 1 — Read Context First
+## Pre-loaded Context
+
+If the invoking prompt contains a `[PRE-LOADED CONTEXT]` block with `current_phase`, `pending_tasks`, and `key_constraints`:
+- Use those values directly — skip reading AGENTS.md, LATEST_STATE.md, TASK_BOARD.md
+- `pending_tasks` is the authoritative list of `[ ]` tasks to implement
+- `key_constraints` replaces AGENTS.md rules for this session
+
+Only proceed to Step 1 file reads if `[PRE-LOADED CONTEXT]` is absent.
+
+## Step 1 — Read Context First (PRE-LOADED CONTEXT 없을 때만)
 
 Read ALL of the following before doing anything:
 

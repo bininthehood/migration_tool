@@ -36,6 +36,14 @@ You receive the following values from the invoking prompt:
 
 Use these values wherever paths are needed. Do NOT hardcode any absolute paths.
 
+## Pre-loaded Context
+
+If the invoking prompt contains a `[PRE-LOADED CONTEXT]` block, use those values directly:
+- `run_command` → use as-is for Step 1 execution (skip reading next-session-manifest.json)
+- `phase`, `latest_run.*` → use for Step 0 skip check (skip reading next-session-manifest.json)
+
+Only read `next-session-manifest.json` if `[PRE-LOADED CONTEXT]` is absent.
+
 ## Sub-agent Invocation
 
 To call dev-agent, meta-agent, or migration-agent, use the Agent tool with the appropriate subagent_type.

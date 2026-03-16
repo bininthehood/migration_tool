@@ -21,9 +21,17 @@ echo "migration_tool_root_linux: $(pwd)"
 3. `LATEST_STATE.md` — 마이그레이션 현황
 4. `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md` — 최근 실행 피드백
 
-읽은 후 아래를 요약합니다:
-- 현재 Phase
-- 직전 run_id, status, failed_step (있는 경우)
+읽은 후 아래 변수를 추출해 이후 단계에서 사용합니다 (에이전트에 인라인 전달용):
+
+| 변수 | 추출 위치 |
+|------|-----------|
+| `{current_phase}` | next-session-manifest.json → `phase` |
+| `{run_command}` | next-session-manifest.json → `preferred_flow.command` (<project-root>를 실제 경로로 치환) |
+| `{latest_run_status}` | next-session-manifest.json → `latest_run.status` |
+| `{latest_run_failed_step}` | next-session-manifest.json → `latest_run.failed_step` |
+| `{latest_run_id}` | next-session-manifest.json → `latest_run.run_id` |
+| `{pending_tasks}` | TASK_BOARD.md → `[ ]`로 시작하는 줄 전체 목록 |
+
 - Phase A 스킵 가능 여부 (직전 success + 핵심 파일 변경 없음)
 
 ## Step 1.5 — bootstrap-frontend 자동 실행 (필요 시)
@@ -105,10 +113,12 @@ prompt: |
     "failed_code": ""
   }
 
-  [컨텍스트]
-  - Phase: {현재 Phase}
-  - 직전 run_id: {run_id} / status: {status}
-  - 실행 명령: preferred_flow or fallback_flow
+  [PRE-LOADED CONTEXT — 파일 재읽기 불필요]
+  phase: {current_phase}
+  latest_run.status: {latest_run_status}
+  latest_run.failed_step: {latest_run_failed_step}
+  latest_run.run_id: {latest_run_id}
+  run_command: {run_command}
 ```
 
 orchestrator 반환 결과를 확인합니다:
@@ -131,6 +141,20 @@ subagent_type: migration-agent
 prompt: |
   project_root: {project_root_linux}
   migration_tool_root: {migration_tool_root_linux}
+
+  [PRE-LOADED CONTEXT — 파일 재읽기 불필요]
+  current_phase: {current_phase}
+
+  pending_tasks:
+  {pending_tasks}
+
+  key_constraints:
+  - Dynamic basename: window.location.pathname 기반, "/ui" 하드코딩 금지
+  - JSP/Spring 파일 수정 금지 (dispatcher-servlet.xml, web.xml, controllers)
+  - 세션 가드: /user/v1/sessionInfo + sessionData.siteCode/levelCode/userId 확인 필수
+  - UTF-8 without BOM
+  - npm run build 실행 금지 (dev 서버가 처리)
+  - 완료된 코드 재작성 금지 (incremental only)
 ```
 
 migration-agent 반환 결과(`tasks_implemented`, `tasks_blocked`)를 수집합니다.
