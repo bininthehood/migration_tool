@@ -1,23 +1,20 @@
-Migration automation 루프를 시작합니다. 경로를 동적으로 계산한 뒤 automation-orchestrator 서브에이전트를 실행합니다.
+Migration automation 루프를 시작합니다.
+서브에이전트 호출(orchestrator → migration-agent → meta-agent)은 이 스킬(메인 Claude)이 직접 순서대로 실행합니다.
 
 ## Step 0 — 경로 계산
 
 Bash 도구로 아래 명령을 실행해 project_root와 migration_tool_root를 계산합니다:
 
 ```bash
-echo "migration_tool_root: $(wslpath -w "$(pwd)")"
-echo "project_root: $(wslpath -w "$(dirname "$(pwd)")")"
+echo "project_root_linux: $(dirname "$(pwd)")"
+echo "migration_tool_root_linux: $(pwd)"
 ```
 
-결과 예시:
-- `migration_tool_root` = `C:\Projects\SomeApp\migration_tool`
-- `project_root` = `C:\Projects\SomeApp`
-
-이후 모든 단계에서 이 두 값을 사용합니다. 절대 경로를 하드코딩하지 않습니다.
+이후 모든 단계에서 Linux 경로를 사용합니다. 절대 경로를 하드코딩하지 않습니다.
 
 ## Step 1 — 컨텍스트 로드
 
-아래 파일을 순서대로 읽어 현재 상태를 파악합니다 (CWD = migration_tool_root 기준 상대경로):
+아래 파일을 순서대로 읽어 현재 상태를 파악합니다:
 
 1. `AGENTS.md` — 절대 원칙 및 프로젝트 제약
 2. `automation/next-session-manifest.json` — 직전 실행 상태 및 선호 커맨드
@@ -27,7 +24,7 @@ echo "project_root: $(wslpath -w "$(dirname "$(pwd)")")"
 읽은 후 아래를 요약합니다:
 - 현재 Phase
 - 직전 run_id, status, failed_step (있는 경우)
-- 실행에 사용할 명령 (preferred_flow 또는 fallback_flow)
+- Phase A 스킵 가능 여부 (직전 success + 핵심 파일 변경 없음)
 
 ## Step 2 — 인자 처리
 
@@ -35,18 +32,14 @@ echo "project_root: $(wslpath -w "$(dirname "$(pwd)")")"
 
 | 인자 | 동작 |
 |------|------|
-| `capture=none` | CaptureMode를 none으로 강제 (fallback_flow 사용) |
-| `capture=preset` | CaptureMode를 preset으로 강제 (preferred_flow 사용) |
-| `fresh` | run_count=0으로 시작 |
-| `resume` | orchestrator-state.json에서 이전 상태 복원 |
-| 인자 없음 | next-session-manifest.json의 preferred_flow 사용 |
+| `capture=none` | fallback_flow 사용 |
+| `capture=preset` | preferred_flow 사용 |
+| `fresh` | 인프라 체크 강제 실행 (Phase A 스킵 불가) |
+| `infra-only` | Phase A만 실행하고 종료 (Phase B 스킵) |
+| `impl-only` | Phase A 스킵, Phase B (migration-agent)만 실행 |
+| 인자 없음 | preferred_flow, Phase A 스킵 조건 자동 판단 |
 
-직전 실행이 `SESSION_CONTRACT_FAIL` 또는 `EPERM` 관련 실패였고 인자가 없으면,
-자동으로 fallback_flow(CaptureMode none)를 먼저 시도합니다.
-
-## Step 3 — 진행 상태 감시 창 자동 실행
-
-automation-orchestrator를 호출하기 전에 Bash 도구로 아래 명령을 실행합니다:
+## Step 3 — 진행 상태 감시 시작
 
 ```bash
 PROGRESS_FILE="$(pwd)/automation/logs/orchestrator-progress.md"
@@ -55,27 +48,112 @@ touch "$PROGRESS_FILE"
 bash -c "tail -f '$PROGRESS_FILE'" &
 ```
 
-실행 후 사용자에게 알립니다:
-> "진행 상태 감시가 시작됐습니다. `orchestrator-progress.md`가 각 Step마다 갱신됩니다."
+> "진행 상태 감시가 시작됐습니다."
 
-## Step 4 — automation-orchestrator 실행
+## Step 4 — Phase A: automation-orchestrator (인프라 체크)
 
-아래와 같이 automation-orchestrator 서브에이전트를 호출합니다:
+`infra-only` 또는 일반 실행 시 수행. `impl-only` 인자면 이 단계를 건너뜁니다.
 
-```
+**Phase A 스킵 조건** (모두 충족 시 건너뜀):
+- `latest_run.status == "success"`
+- `latest_run.failed_step == ""`
+- 아래 핵심 파일이 마지막 run 이후 변경되지 않음:
+  - `src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml`
+  - `src/main/frontend/package.json`
+  - `migration_tool/automation/run-all.sh`
+
+스킵 조건 미충족 또는 `fresh` 인자 시: automation-orchestrator를 호출합니다.
+
 Agent 도구 사용:
-  subagent_type: automation-orchestrator
-  prompt: |
-    project_root: {Step 0에서 계산한 project_root}
-    migration_tool_root: {Step 0에서 계산한 migration_tool_root}
+```
+subagent_type: automation-orchestrator
+prompt: |
+  project_root: {project_root_linux}
+  migration_tool_root: {migration_tool_root_linux}
 
-    [컨텍스트 요약]
-    - Phase: ...
-    - 직전 run_id / status / failed_step: ...
-    - 실행 명령: preferred_flow 또는 fallback_flow
+  역할: Phase A (인프라 pre-flight check)만 수행하고 결과를 반환하세요.
+  run-all.sh를 실행하고, FAIL 시 dev-agent로 수정 후 재시도(최대 3회).
+  PASS 또는 한도 초과 시 아래 JSON을 반환하고 즉시 종료하세요.
+  migration-agent, meta-agent는 호출하지 마세요.
 
-    [인자 처리 결과]
-    - fresh / resume / capture 여부: ...
+  반환 형식:
+  {
+    "phase_a_result": "pass | fail | limit",
+    "run_count": N,
+    "pass_history": [...],
+    "previous_fixes": [...],
+    "final_pass": N,
+    "final_total": N,
+    "failed_step": "",
+    "failed_code": ""
+  }
+
+  [컨텍스트]
+  - Phase: {현재 Phase}
+  - 직전 run_id: {run_id} / status: {status}
+  - 실행 명령: preferred_flow or fallback_flow
 ```
 
-서브에이전트가 완료되면 결과를 사용자에게 보고합니다.
+orchestrator 반환 결과를 확인합니다:
+- `phase_a_result == "fail"` 또는 `"limit"`: 사용자에게 보고하고 중단
+- `phase_a_result == "pass"`: Step 5로 진행
+
+## Step 5 — Phase B: migration-agent (구현)
+
+`infra-only` 인자면 이 단계를 건너뜁니다.
+
+TASK_BOARD.md를 읽어 `[ ]` 미완료 태스크 존재 여부를 확인합니다.
+
+미완료 태스크가 없으면: "모든 구현 작업 완료" 보고 → Step 6으로 이동.
+
+미완료 태스크 존재 시: migration-agent를 호출합니다.
+
+Agent 도구 사용:
+```
+subagent_type: migration-agent
+prompt: |
+  project_root: {project_root_linux}
+  migration_tool_root: {migration_tool_root_linux}
+```
+
+migration-agent 반환 결과(`tasks_implemented`, `tasks_blocked`)를 수집합니다.
+
+migration-agent 완료 후 사용자에게 보고합니다:
+```
+Phase B 완료. :3000에서 구현 결과를 확인해 주세요.
+
+구현된 tasks: {tasks_implemented 목록}
+블록된 tasks: {tasks_blocked 목록} (있는 경우)
+
+다음 단계:
+1. 확인 완료 → Phase C 진행
+2. 추가 구현 요청 → 피드백 제공
+3. 중단
+```
+
+사용자 응답을 기다립니다:
+- 1 → Step 6
+- 2 → migration-agent 재호출 (피드백 포함)
+- 3 → Step 6 (meta-agent 스킵)
+
+## Step 6 — Phase C: meta-agent (문서 업데이트)
+
+`migration_tasks_implemented` AND `previous_fixes` 모두 비어있으면 meta-agent를 스킵하고 직접 보고합니다.
+
+그 외: meta-agent를 호출합니다.
+
+Agent 도구 사용:
+```
+subagent_type: meta-agent
+prompt: |
+  {
+    "termination_reason": "completion | user_stopped",
+    "project_root": "{project_root_linux}",
+    "migration_tool_root": "{migration_tool_root_linux}",
+    "run_stats": { ... },
+    "previous_fixes": [...],
+    "migration_tasks_implemented": [...]
+  }
+```
+
+meta-agent 완료 후 최종 결과를 사용자에게 보고합니다.
