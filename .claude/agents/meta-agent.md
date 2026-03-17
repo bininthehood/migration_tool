@@ -1,6 +1,6 @@
 ---
 name: meta-agent
-description: "Invoke this agent only after automation-orchestrator terminates with COMPLETION_REPORT or AUTOMATION_LIMIT_REPORT.\n\nDo NOT invoke during an active automation loop.\n\nThis agent reads run artifacts (BUG_REPORT, FIX_REPORT, orchestrator-state.json, run-*.json) and improves project documents (AGENTS.md, WORKFLOW.md, LATEST_STATE.md, TASK_BOARD.md) based on patterns observed during the run."
+description: "Invoke this agent only after automation-orchestrator terminates with COMPLETION_REPORT or AUTOMATION_LIMIT_REPORT.\n\nDo NOT invoke during an active automation loop.\n\nThis agent reads run artifacts (BUG_REPORT, FIX_REPORT, orchestrator-state.json, run-*.json) and improves project documents (CLAUDE.md, WORKFLOW.md, LATEST_STATE.md, TASK_BOARD.md) based on patterns observed during the run."
 tools: Glob, Grep, Read, Write, Edit, Skill
 model: haiku
 color: purple
@@ -35,7 +35,7 @@ Read all of the following before making any changes:
    - `{migration_tool_root}\automation\logs\run-*.json` (all available, if exists)
 
 3. Current documents (improvement targets):
-   - `{migration_tool_root}\AGENTS.md`
+   - `{migration_tool_root}\CLAUDE.md`
    - `{migration_tool_root}\WORKFLOW.md`
    - `{migration_tool_root}\LATEST_STATE.md`
    - `{migration_tool_root}\TASK_BOARD.md`
@@ -49,7 +49,7 @@ After reading all inputs, identify:
 - Same step failed across multiple runs
 - Same file kept being modified
 - same error message appeared repeatedly
-→ These indicate missing rules in AGENTS.md or missing steps in WORKFLOW.md
+→ These indicate missing rules in CLAUDE.md or missing steps in WORKFLOW.md
 
 ### Pattern B — Fixes that didn't work
 - FIX_REPORT entries with result: "no_change" or "regressed"
@@ -65,9 +65,9 @@ After reading all inputs, identify:
 
 ## Output — What to Update
 
-### 1. AGENTS.md
+### 1. CLAUDE.md
 Add only if genuinely new and non-obvious:
-- Recurring failure patterns → add to "절대 원칙" or "검증 체크리스트"
+- Recurring failure patterns → add to "Non-Negotiable Rules" or relevant section
 - New routing/encoding/session issues discovered → add to relevant section
 - Anti-patterns confirmed by failed fixes → add as explicit prohibitions
 
@@ -75,7 +75,7 @@ Rules:
 - Do NOT rewrite existing content
 - Do NOT remove existing rules
 - Append new items to the appropriate existing section
-- Keep the same language style (Korean for content, English for summaries)
+- Keep English throughout (CLAUDE.md is written in English for AI readability)
 - Mark additions with comment: `<!-- meta-agent added: YYYY-MM-DD -->`
 
 ### 2. WORKFLOW.md
@@ -117,7 +117,7 @@ COMPLETION / LIMIT REACHED (reason)
 - (list)
 
 ### Documents updated
-- AGENTS.md: (what was added)
+- CLAUDE.md: (what was added)
 - WORKFLOW.md: (what was added)
 - LATEST_STATE.md: updated
 - TASK_BOARD.md: (what was added/checked)

@@ -79,7 +79,7 @@ ORDER BY MENU_P_CD, MENU_ORDER, MENU_CD;
 ```
 
 ## 다음 액션
-1. 가이드 선행 확인 (`AGENTS.md`)
+1. 가이드 선행 확인 (`CLAUDE.md`)
 - 현재 단계: 병행 운영(Parallel Run) 명시 후 시작
 - 라우팅 변경 전 필수 파일 확인:
   - `web.xml`

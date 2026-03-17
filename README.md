@@ -9,13 +9,13 @@
 
 ## 포함 범위
 - `automation/` : 실행, 검증, 문서 동기화 스크립트
-- `AGENTS.md`, `WORKFLOW.md` : 운영 규칙
+- `CLAUDE.md`, `WORKFLOW.md` : 운영 규칙
 - `LATEST_STATE.md`, `TASK_BOARD.md`, `docs-migration-backlog.md` : 상태 기준선
 - `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md` : 자동화 실행 피드백
 
 ## 권장 실행 흐름
 1. 대상 프로젝트 루트에서 이 저장소 내용을 최신으로 맞춘다.
-2. `AGENTS.md`와 `WORKFLOW.md`를 읽는다.
+2. `CLAUDE.md`와 `WORKFLOW.md`를 읽는다.
 3. `automation/run-all.ps1`를 실행한다.
 4. 결과 로그와 피드백 문서를 검토한다.
 

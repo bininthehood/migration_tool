@@ -14,7 +14,7 @@
 - `source-analysis/` — SourceAnalyzer 결과 (프로젝트별)
 
 ### git에 반드시 포함하는 파일 (공유 자산)
-- `AGENTS.md` — 절대 원칙 및 프로젝트 제약
+- `CLAUDE.md` — 절대 원칙 및 프로젝트 제약
 - `WORKFLOW.md` — 이 문서
 - `LATEST_STATE.md` — **항상 Phase 0 (Inventory) 초기 상태로 커밋**
 - `TASK_BOARD.md` — **항상 0% 미착수 상태로 커밋**
@@ -45,7 +45,7 @@
 
 Read in this order:
 
-1. `AGENTS.md`
+1. `CLAUDE.md`
 2. `automation/next-session-manifest.json`
 3. `LATEST_STATE.md`
 4. `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md`
@@ -87,7 +87,7 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 
 ## Priority Order
 
-1. `AGENTS.md`
+1. `CLAUDE.md`
 2. `automation/next-session-manifest.json`
 3. `LATEST_STATE.md`
 4. `docs-migration-backlog.md`

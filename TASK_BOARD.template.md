@@ -96,7 +96,7 @@ Phase 1 완료 후 화면별 마이그레이션 태스크가 자동 생성됩니
 
 Before performing any change
 
-1. Read `AGENTS.md`
+1. Read `CLAUDE.md`
 2. Read `LATEST_STATE.md`
 3. Read `automation/next-session-manifest.json`
 4. Read `TASK_BOARD.md`

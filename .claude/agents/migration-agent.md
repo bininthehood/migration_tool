@@ -24,9 +24,9 @@ Webapp UI root: `{project_root}/src/main/webapp/ui`
 ## Pre-loaded Context
 
 If the invoking prompt contains a `[PRE-LOADED CONTEXT]` block with `current_phase`, `pending_tasks`, and `key_constraints`:
-- Use those values directly — skip reading AGENTS.md, LATEST_STATE.md, TASK_BOARD.md
+- Use those values directly — skip reading CLAUDE.md, LATEST_STATE.md, TASK_BOARD.md
 - `pending_tasks` is the authoritative list of `[ ]` tasks to implement
-- `key_constraints` replaces AGENTS.md rules for this session
+- `key_constraints` replaces CLAUDE.md rules for this session
 
 Only proceed to Step 1 file reads if `[PRE-LOADED CONTEXT]` is absent.
 
@@ -34,7 +34,7 @@ Only proceed to Step 1 file reads if `[PRE-LOADED CONTEXT]` is absent.
 
 Read ALL of the following before doing anything:
 
-1. `{migration_tool_root}/AGENTS.md` — 절대 원칙 (non-negotiable)
+1. `{migration_tool_root}/CLAUDE.md` — 절대 원칙 (non-negotiable)
 2. `{migration_tool_root}/LATEST_STATE.md` — current phase
 3. `{migration_tool_root}/TASK_BOARD.md` — full task list
 
@@ -295,7 +295,7 @@ After completing all tasks in a phase:
 - If yes: continue into next phase tasks
 - If no: stop and report what's missing
 
-## Critical Constraints (from AGENTS.md)
+## Critical Constraints (from CLAUDE.md)
 
 1. **Dynamic basename** — NEVER hardcode `"/ui"`. Always use runtime computation.
 2. **Incremental** — Do NOT rewrite existing working code.

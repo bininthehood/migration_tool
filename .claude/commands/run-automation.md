@@ -16,7 +16,7 @@ echo "migration_tool_root_linux: $(pwd)"
 
 아래 파일을 순서대로 읽어 현재 상태를 파악합니다:
 
-1. `AGENTS.md` — 절대 원칙 및 프로젝트 제약
+1. `CLAUDE.md` — 절대 원칙 및 프로젝트 제약
 2. `automation/next-session-manifest.json` — 직전 실행 상태 및 선호 커맨드
 3. `LATEST_STATE.md` — 마이그레이션 현황
 4. `docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md` — 최근 실행 피드백
@@ -53,23 +53,43 @@ bash {migration_tool_root}/automation/bootstrap-frontend.sh \
 
 ## Step 1.6 — Dev Server 기동 (필요 시)
 
-포트 3000이 응답하지 않으면 Windows Terminal 새 탭으로 `npm start`를 띄웁니다.
+포트 3000이 응답하지 않으면 Windows Terminal 새 탭으로 `npm run dev`를 띄우고 로그를 파일로 저장합니다.
 
 ```bash
+DEV_LOG="{migration_tool_root}/automation/logs/devserver-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p "$(dirname "$DEV_LOG")"
+
 # 포트 확인
 if ! nc -z localhost 3000 2>/dev/null && ! ss -ltn 2>/dev/null | grep -q ':3000 '; then
-  # wt.exe로 새 Ubuntu 탭에서 npm start 실행
-  wt.exe new-tab --profile Ubuntu -- bash -c \
-    "cd {project_root_linux}/src/main/frontend && npm start; exec bash"
-  # 최대 60초 대기
-  for i in $(seq 1 30); do
-    sleep 2
-    nc -z localhost 3000 2>/dev/null && break
-  done
+  if command -v wt.exe &>/dev/null; then
+    # wt.exe로 새 Ubuntu 탭에서 npm run dev 실행 + 로그 동시 저장
+    wt.exe new-tab --profile Ubuntu --title "React Dev :3000" -- bash -c \
+      "cd {project_root_linux}/src/main/frontend && npm run dev 2>&1 | tee '$DEV_LOG'; exec bash"
+    echo "Dev server 기동 중... 로그: $DEV_LOG"
+    # 최대 60초 대기
+    for i in $(seq 1 30); do
+      sleep 2
+      if nc -z localhost 3000 2>/dev/null; then
+        echo "Dev server :3000 응답 확인"
+        break
+      fi
+      # 로그에서 에러 조기 감지
+      if grep -q "Error\|EADDRINUSE\|Failed" "$DEV_LOG" 2>/dev/null; then
+        echo "⚠ Dev server 오류 감지. 로그 확인: $DEV_LOG"
+        break
+      fi
+    done
+  else
+    echo "wt.exe 없음 — dev 서버를 수동으로 실행해 주세요: cd src/main/frontend && npm run dev"
+  fi
+else
+  echo "Dev server :3000 이미 실행 중"
 fi
 ```
 
-- `wt.exe`가 없으면 건너뜁니다 (사용자가 수동으로 띄운 것으로 간주).
+- `wt.exe`가 없으면 수동 실행 안내 메시지를 출력하고 계속 진행합니다.
+- 새 탭 타이틀: `React Dev :3000`
+- 로그 파일: `automation/logs/devserver-YYYYMMDD-HHMMSS.log` (run-all.sh 로그와 같은 위치)
 - 60초 후에도 포트가 열리지 않으면 경고만 출력하고 계속 진행합니다 (Phase A 검증은 :3000 불필요).
 
 ## Step 2 — 인자 처리
@@ -88,10 +108,24 @@ fi
 ## Step 3 — 진행 상태 감시 시작
 
 ```bash
-PROGRESS_FILE="$(pwd)/automation/logs/orchestrator-progress.md"
-mkdir -p "$(dirname "$PROGRESS_FILE")"
+LOG_DIR="$(pwd)/automation/logs"
+mkdir -p "$LOG_DIR"
+
+# 오케스트레이터 진행 상태 파일
+PROGRESS_FILE="$LOG_DIR/orchestrator-progress.md"
 touch "$PROGRESS_FILE"
-bash -c "tail -f '$PROGRESS_FILE'" &
+
+# Dev 서버 로그 (Step 1.6에서 생성된 최신 파일)
+DEV_LOG=$(ls -t "$LOG_DIR"/devserver-*.log 2>/dev/null | head -1)
+
+if [ -n "$DEV_LOG" ]; then
+  # 오케스트레이터 진행 + dev 서버 로그 동시 감시
+  echo "=== 오케스트레이터 진행 감시: $PROGRESS_FILE ==="
+  echo "=== Dev 서버 로그 감시: $DEV_LOG ==="
+  bash -c "tail -f '$PROGRESS_FILE' '$DEV_LOG'" &
+else
+  bash -c "tail -f '$PROGRESS_FILE'" &
+fi
 ```
 
 > "진행 상태 감시가 시작됐습니다."
