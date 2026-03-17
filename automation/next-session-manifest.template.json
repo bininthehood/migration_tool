@@ -50,7 +50,7 @@
     "encoding": "UTF-8 without BOM"
   },
   "setup_required": {
-    "frontend_dir_missing": false,
+    "frontend_dir_missing": true,
     "note": "Run bootstrap-frontend.sh --apply --install-deps before automation."
   },
   "latest_run": {
