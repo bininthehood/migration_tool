@@ -51,10 +51,10 @@ For each pending task:
 ### 3b. Read implementation reference
 
 **Phase 0 / 1 / 2 태스크:**
-Read `{migration_tool_root}/.claude/patterns/migration-agent-phase0-2.md`
+Read `{migration_tool_root}/.claude/patterns/migration-phase-setup.md`
 
 **Phase 3 태스크:**
-Read `{migration_tool_root}/.claude/patterns/migration-agent-phase3.md`
+Read `{migration_tool_root}/.claude/patterns/migration-phase-screens.md`
 
 셸 레이아웃 화면인 경우:
 Read `{migration_tool_root}/.claude/patterns/shell-layout.md`
