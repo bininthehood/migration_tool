@@ -130,14 +130,10 @@ Keep session startup deterministic and low-overhead for AI execution while prese
 - `GET /<context-path>/ui` redirects to `/<context-path>/ui/`
 - `GET /<context-path>/ui/` returns `200`
 - `GET /<context-path>/ui/<deep-route>` returns `200`
-- Session contract order:
-  - `policyCheck`
-  - `sessionAlive`
-  - `sessionInfo`
-- Required session fields:
-  - `siteCode`
-  - `levelCode`
-  - `userId`
+- Session contract: 프로젝트마다 실제 엔드포인트를 컨트롤러에서 직접 확인할 것.
+  - 일반적으로 `policyCheck` (로그인), `sessionChecker` 또는 `sessionAlive` (세션 확인)
+  - `sessionInfo` 엔드포인트는 프로젝트에 따라 존재하지 않을 수 있음 — 가정 금지
+- Required session fields: 컨트롤러 응답 구조에서 직접 확인. `sessionData` 객체가 없는 경우 sessionStorage 경유로 전달.
 
 ## Post-Run Outputs
 
@@ -181,3 +177,30 @@ Phase A PASS 후, Phase 3 화면 마이그레이션 착수 전에:
 이 단계가 완료되어야만 migration-agent가 Phase 3 화면 마이그레이션을 안전하게 시작할 수 있다.
 
 영문 요약: After Phase A PASS, manually build frontend, redeploy Tomcat, verify /ui/ → 200, then mark TASK_BOARD complete before starting Phase 3 migration-agent.
+
+<!-- meta-agent added: 2026-03-18 -->
+## Phase 3 완료 후 검증 항목
+
+Phase 3 마이그레이션이 완료되면 다음을 반드시 확인하세요:
+
+1. **migration-screen-map.json 경로 검증**
+   - 모든 `reactRoute` 항목이 `main/` prefix를 포함하는가?
+   - 예: `dashboard/monitoring` → `main/dashboard/monitoring`
+   - Deep-link 테스트: 각 화면 URL 직접 입력 → 404 또는 redirect 없이 200 응답
+
+2. **공통 UI 패턴 확인** (각 화면 유형별)
+   - **리스트 화면**: colSpan empty-state로 thead 항상 표시 (데이터 없을 때도)
+   - **페이징 화면**: offset/limit 계산 + 페이지 범위(1~5) + 총 건수 표시
+   - **트리 패널**: lazy-load 구현 + click filter (UserPage, ApprovePage)
+   - **날짜 입력**: HTML5 `type="date"` 사용 (jQuery datepicker 제거)
+   - **오디오/미디어**: HTML5 태그 + 커스텀 컨트롤
+
+3. **세션/권한 API 검증**
+   - 모든 권한 기반 API(`/selectList`)에 `siteCode`/`levelCode` 파라미터 포함
+   - sessionStorage에서 로그인 직후 저장된 값 사용 (GNB, 메뉴 권한 조회)
+
+4. **앞으로 수행할 단계**
+   - Phase 4: API 엔드포인트 문서화 (ENDPOINT_MAP.md 작성)
+   - Phase 5: npm run build → Tomcat 배포 → 전체 통합 테스트
+
+영문 요약: After Phase 3 completion, validate reactRoute prefixes, verify deep-links, confirm common patterns (table headers, pagination, lazy trees), and test session/permission APIs before Phase 4.

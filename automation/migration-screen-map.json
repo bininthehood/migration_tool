@@ -1,3 +1,33 @@
 {
-  "screens": []
+  "screens": [
+    { "id": "login",              "name": "로그인",          "group": "auth",    "legacyUrl": "login",                          "reactRoute": "login",                        "status": "pending" },
+    { "id": "main",               "name": "메인",            "group": "auth",    "legacyUrl": "main",                           "reactRoute": "main",                         "status": "pending" },
+    { "id": "index",              "name": "인덱스(팝업)",    "group": "auth",    "legacyUrl": "index",                          "reactRoute": "index",                        "status": "pending" },
+    { "id": "monitoring",         "name": "모니터링",        "group": "list",    "legacyUrl": "dashboard/monitoring",           "reactRoute": "main/dashboard/monitoring",         "status": "pending" },
+    { "id": "monitoring_bak",     "name": "모니터링 백업",   "group": "list",    "legacyUrl": "dashboard/monitoring_bak",       "reactRoute": "dashboard/monitoring_bak",          "status": "pending" },
+    { "id": "status",             "name": "상태",            "group": "list",    "legacyUrl": "dashboard/status",               "reactRoute": "main/dashboard/status",             "status": "pending" },
+    { "id": "listen",             "name": "청취",            "group": "list",    "legacyUrl": "listen/listen",                  "reactRoute": "main/listen/listen",                "status": "pending" },
+    { "id": "listen_target",      "name": "청취 대상",       "group": "list",    "legacyUrl": "listen/listen_target",           "reactRoute": "main/listen/listen_target",         "status": "pending" },
+    { "id": "interface_info",     "name": "인터페이스 정보", "group": "list",    "legacyUrl": "listen/interface_info",          "reactRoute": "main/listen/interface_info",        "status": "pending" },
+    { "id": "table_manager",      "name": "테이블 관리",     "group": "admin",   "legacyUrl": "listen/table_manager",           "reactRoute": "main/listen/table_manager",         "status": "pending" },
+    { "id": "log_access",         "name": "접근 로그",       "group": "list",    "legacyUrl": "logs/log_access",                "reactRoute": "main/logs/log_access",              "status": "pending" },
+    { "id": "log_account",        "name": "계정 로그",       "group": "list",    "legacyUrl": "logs/log_account",               "reactRoute": "main/logs/log_account",             "status": "pending" },
+    { "id": "log_system",         "name": "시스템 로그",     "group": "list",    "legacyUrl": "logs/log_system",                "reactRoute": "main/logs/log_system",              "status": "pending" },
+    { "id": "log_web",            "name": "웹 로그",         "group": "list",    "legacyUrl": "logs/log_web",                   "reactRoute": "main/logs/log_web",                 "status": "pending" },
+    { "id": "user",               "name": "사용자 관리",     "group": "admin",   "legacyUrl": "manag/user",                     "reactRoute": "main/manag/user",                   "status": "pending" },
+    { "id": "group",              "name": "그룹 관리",       "group": "admin",   "legacyUrl": "manag/group",                    "reactRoute": "main/manag/group",                  "status": "pending" },
+    { "id": "perm",               "name": "권한 관리",       "group": "admin",   "legacyUrl": "manag/perm",                     "reactRoute": "main/manag/perm",                   "status": "pending" },
+    { "id": "recorder_server",    "name": "녹취 서버",       "group": "admin",   "legacyUrl": "recorder/server",                "reactRoute": "main/recorder/server",              "status": "pending" },
+    { "id": "recorder_sender",    "name": "녹취 발신자",     "group": "admin",   "legacyUrl": "recorder/sender",                "reactRoute": "main/recorder/sender",              "status": "pending" },
+    { "id": "config",             "name": "설정",            "group": "admin",   "legacyUrl": "system/config",                  "reactRoute": "main/system/config",                "status": "pending" },
+    { "id": "config_setting",     "name": "설정 상세",       "group": "admin",   "legacyUrl": "system/config_setting",          "reactRoute": "main/system/config_setting",        "status": "pending" },
+    { "id": "menu",               "name": "메뉴 관리",       "group": "admin",   "legacyUrl": "system/menu",                    "reactRoute": "main/system/menu",                  "status": "pending" },
+    { "id": "code",               "name": "코드 관리",       "group": "admin",   "legacyUrl": "system/code",                    "reactRoute": "main/system/code",                  "status": "pending" },
+    { "id": "approve",            "name": "결재",            "group": "write",   "legacyUrl": "approve/approve",                "reactRoute": "main/approve/approve",              "status": "pending" },
+    { "id": "approve_request",    "name": "결재 요청",       "group": "write",   "legacyUrl": "approve/approve_request",        "reactRoute": "main/approve/approve_request",      "status": "pending" },
+    { "id": "format_00",          "name": "결재 양식 00",    "group": "write",   "legacyUrl": "approve/document/v1/format_00",  "reactRoute": "approve/document/format_00",   "status": "pending" },
+    { "id": "format_01",          "name": "결재 양식 01",    "group": "write",   "legacyUrl": "approve/document/v1/format_01",  "reactRoute": "approve/document/format_01",   "status": "pending" },
+    { "id": "download",           "name": "다운로드",        "group": "list",    "legacyUrl": "view/download",                  "reactRoute": "view/download",                "status": "pending" },
+    { "id": "download_agent",     "name": "에이전트 다운로드","group": "list",   "legacyUrl": "view/download_agent",            "reactRoute": "view/download_agent",          "status": "pending" }
+  ]
 }

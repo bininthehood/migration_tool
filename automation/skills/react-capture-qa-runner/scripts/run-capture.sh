@@ -7,6 +7,8 @@ CAPTURE_PATH=""
 NAME=""
 PRESET="all"
 BASE_URL=""
+LEGACY_URL=""
+CONTEXT_PATH=""
 USER_ARG=""
 PASSWORD_ARG=""
 WIDTH=1920
@@ -15,17 +17,19 @@ HEADED=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --project-root|-ProjectRoot) PROJECT_ROOT="$2"; shift 2 ;;
-    --mode|-Mode)                MODE="$2";          shift 2 ;;
-    --path|-Path)                CAPTURE_PATH="$2";  shift 2 ;;
-    --name|-Name)                NAME="$2";          shift 2 ;;
-    --preset|-Preset)            PRESET="$2";        shift 2 ;;
-    --base-url|-BaseUrl)         BASE_URL="$2";      shift 2 ;;
-    --user|-User)                USER_ARG="$2";      shift 2 ;;
-    --password|-Password)        PASSWORD_ARG="$2";  shift 2 ;;
-    --width|-Width)              WIDTH="$2";         shift 2 ;;
-    --height|-Height)            HEIGHT="$2";        shift 2 ;;
-    --headed|-Headed)            HEADED=true;         shift ;;
+    --project-root|-ProjectRoot)   PROJECT_ROOT="$2"; shift 2 ;;
+    --mode|-Mode)                  MODE="$2";          shift 2 ;;
+    --path|-Path)                  CAPTURE_PATH="$2";  shift 2 ;;
+    --name|-Name)                  NAME="$2";          shift 2 ;;
+    --preset|-Preset)              PRESET="$2";        shift 2 ;;
+    --base-url|-BaseUrl)           BASE_URL="$2";      shift 2 ;;
+    --legacy-url|-LegacyUrl)       LEGACY_URL="$2";    shift 2 ;;
+    --context-path|-ContextPath)   CONTEXT_PATH="$2";  shift 2 ;;
+    --user|-User)                  USER_ARG="$2";      shift 2 ;;
+    --password|-Password)          PASSWORD_ARG="$2";  shift 2 ;;
+    --width|-Width)                WIDTH="$2";         shift 2 ;;
+    --height|-Height)              HEIGHT="$2";        shift 2 ;;
+    --headed|-Headed)              HEADED=true;         shift ;;
     *) shift ;;
   esac
 done
@@ -50,6 +54,8 @@ else
 fi
 
 [[ -n "$BASE_URL" ]]      && CAPTURE_ARGS+=(--baseUrl "$BASE_URL")
+[[ -n "$LEGACY_URL" ]]    && CAPTURE_ARGS+=(--legacyUrl "$LEGACY_URL")
+[[ -n "$CONTEXT_PATH" ]]  && CAPTURE_ARGS+=(--contextPath "$CONTEXT_PATH")
 [[ -n "$USER_ARG" ]]      && CAPTURE_ARGS+=(--user "$USER_ARG")
 [[ -n "$PASSWORD_ARG" ]]  && CAPTURE_ARGS+=(--password "$PASSWORD_ARG")
 [[ "$WIDTH" -gt 0 ]]      && CAPTURE_ARGS+=(--width "$WIDTH")

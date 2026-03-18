@@ -28,6 +28,7 @@ GIT_COMMIT_MESSAGE=""
 GIT_REMOTE_URL=""
 GIT_DEFAULT_BRANCH="main"
 GIT_INIT_IF_MISSING=false
+LEGACY_BASE_URL="http://localhost:8080"
 TOMCAT_BASE_URL="http://localhost:8080"
 TOMCAT_CONTEXT_PATH="/rays"
 TOMCAT_HEALTH_PATH="/ui/"
@@ -78,6 +79,7 @@ while [[ $# -gt 0 ]]; do
     --git-remote-url|-GitRemoteUrl) GIT_REMOTE_URL="$2"; shift 2 ;;
     --git-default-branch|-GitDefaultBranch) GIT_DEFAULT_BRANCH="$2"; shift 2 ;;
     --git-init-if-missing|-GitInitIfMissing) GIT_INIT_IF_MISSING=true; shift ;;
+    --legacy-base-url|-LegacyBaseUrl) LEGACY_BASE_URL="$2"; shift 2 ;;
     --tomcat-base-url|-TomcatBaseUrl) TOMCAT_BASE_URL="$2"; shift 2 ;;
     --tomcat-context-path|-TomcatContextPath) TOMCAT_CONTEXT_PATH="$2"; shift 2 ;;
     --tomcat-health-path|-TomcatHealthPath) TOMCAT_HEALTH_PATH="$2"; shift 2 ;;
@@ -704,6 +706,10 @@ step_run_capture() {
     args+=(--preset "$CAPTURE_PRESET")
   fi
   [[ -n "$CAPTURE_BASE_URL" ]] && args+=(--base-url "$CAPTURE_BASE_URL")
+  # compare 모드: 레거시(JSP) URL 전달
+  if [[ "$CAPTURE_MODE" == "compare" ]]; then
+    args+=(--legacy-url "$LEGACY_BASE_URL" --context-path "$TOMCAT_CONTEXT_PATH")
+  fi
   [[ -n "$USER_NAME" ]] && args+=(--user "$USER_NAME")
   [[ -n "$PASSWORD" ]] && args+=(--password "$PASSWORD")
   add_command "bash automation/skills/react-capture-qa-runner/scripts/run-capture.sh --project-root \"$PROJECT_ROOT\" --mode $CAPTURE_MODE"

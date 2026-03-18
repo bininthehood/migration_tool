@@ -20,7 +20,7 @@ bash migration_tool/automation/bootstrap-frontend.sh \
   --install-deps
 ```
 
-```powershell
+```powershelldhzpd
 # Windows PowerShell
 powershell -ExecutionPolicy Bypass -File migration_tool\automation\bootstrap-frontend.ps1 `
   -ProjectRoot <legacy-project-root> `
