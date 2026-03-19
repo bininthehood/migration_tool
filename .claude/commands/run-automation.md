@@ -1,5 +1,6 @@
 Migration automation 루프를 시작합니다.
-서브에이전트 호출(orchestrator → migration-agent → meta-agent)은 이 스킬(메인 Claude)이 직접 순서대로 실행합니다.
+서브에이전트 호출(orchestrator → migration-agent)은 이 스킬(메인 Claude)이 직접 순서대로 실행합니다.
+문서/git 정리는 세션 종료 후 `/update-docs`로 별도 실행합니다.
 
 ## Step 0 — 경로 계산
 
@@ -31,7 +32,6 @@ echo "migration_tool_root_linux: $(pwd)"
 | `{latest_run_status}` | next-session-manifest.json → `latest_run.status` |
 | `{latest_run_failed_step}` | next-session-manifest.json → `latest_run.failed_step` |
 | `{latest_run_id}` | next-session-manifest.json → `latest_run.run_id` |
-| `{meta_agent_clean_runs}` | next-session-manifest.json → `meta_agent_clean_runs` |
 | `{capture_user}` | next-session-manifest.json → `environment.capture_user` |
 | `{capture_password}` | next-session-manifest.json → `environment.capture_password` |
 | `{context_path}` | next-session-manifest.json → `environment.tomcat_context_path` |
@@ -113,22 +113,23 @@ echo "진행 상태 감시 PID: $TAIL_PID"
 **Phase A 스킵 조건** (모두 충족 시 건너뜀):
 - `latest_run.status == "success"`
 - `latest_run.failed_step == ""`
-- 아래 핵심 파일이 마지막 run 이후 변경되지 않음 — Bash로 확인:
+- 아래 핵심 파일이 manifest 마지막 업데이트 이후 변경되지 않음 — Bash로 확인:
 
 ```bash
 # migration_tool은 별도 git repo — migration_tool_root 기준으로 확인
 git -C {migration_tool_root_linux} diff --name-only HEAD -- \
   automation/run-all.sh
 
-# project_root는 git 밖 → mtime으로 확인 (변경 시 날짜 출력)
+# project_root 핵심 파일 변경 확인 — log 파일 대신 manifest 자체를 기준으로 사용
+# (log 파일은 존재하지 않을 수 있지만 manifest는 항상 존재)
 find {project_root_linux}/src/main/webapp/WEB-INF/config/springmvc/dispatcher-servlet.xml \
      {project_root_linux}/src/main/frontend/package.json \
-     -newer {migration_tool_root_linux}/automation/logs/run-{latest_run_id}.json \
+     -newer {migration_tool_root_linux}/automation/next-session-manifest.json \
      2>/dev/null
 ```
 
 두 명령 모두 출력이 비어있으면 스킵 가능. 하나라도 출력되면 Phase A 실행.
-(로그 파일이 없으면 스킵 불가 → Phase A 실행)
+(log 파일이 없어도 manifest가 항상 기준점이 됨 — 로그 파일 의존성 제거)
 
 출력이 비어있으면 스킵 가능. 파일명이 하나라도 출력되면 Phase A를 실행합니다.
 
@@ -168,36 +169,7 @@ prompt: |
 
 orchestrator 반환 결과를 확인합니다:
 - `phase_a_result == "fail"` 또는 `"limit"`: 사용자에게 보고하고 중단
-- `phase_a_result == "pass"`: Step 4.5로 진행
-
-## Step 4.5 — Phase A fix 문서화 (background)
-
-**안정성 체크 먼저:** `next-session-manifest.json`의 `meta_agent_clean_runs` 값을 확인합니다.
-- `meta_agent_clean_runs >= 3` 이고 `previous_fixes`가 비어있으면: 이 단계를 **완전 스킵**합니다 (안정 상태 — meta-agent 기동 불필요).
-- 그 외 `previous_fixes`가 비어있지 않은 경우에만 실행합니다 (Phase A 중 dev-agent가 코드를 수정한 경우).
-
-meta-agent를 **background로 즉시 기동**합니다 — Phase B 진행을 블로킹하지 않습니다:
-
-```
-subagent_type: meta-agent
-run_in_background: true
-prompt: |
-  {
-    "trigger": "phase_a_fixes",
-    "project_root": "{project_root_linux}",
-    "migration_tool_root": "{migration_tool_root_linux}",
-    "previous_fixes": {phase_a_previous_fixes},
-    "run_stats": {
-      "run_count": {phase_a_run_count},
-      "phase_a_result": "pass"
-    },
-    "migration_tasks_implemented": []
-  }
-```
-
-background 기동 후 즉시 Step 5로 진행합니다. meta-agent 완료를 기다리지 않습니다.
-
-`previous_fixes`가 비어있는 경우: 이 단계를 건너뛰고 Step 5로 진행합니다.
+- `phase_a_result == "pass"`: Step 5로 진행
 
 ## Step 5 — Phase B: migration-agent (구현)
 
@@ -327,7 +299,7 @@ prompt: |
 
 병합 시 충돌(동일 path 중복 등)이 있으면 사용자에게 보고합니다.
 
-### Step 5e — 결과 보고 및 meta-agent 기동
+### Step 5e — 결과 보고
 
 사용자에게 결과를 보고합니다:
 
@@ -346,31 +318,9 @@ Phase B 완료. :3000에서 구현 결과를 확인해 주세요.
 3. 중단
 ```
 
-사용자 응답에 따라 처리합니다:
-
-**1 또는 2 선택 시** — 구현이 확정됐으므로 meta-agent를 **background로 즉시 기동**합니다:
-
-```
-subagent_type: meta-agent
-run_in_background: true
-prompt: |
-  {
-    "trigger": "phase_b_complete",
-    "project_root": "{project_root_linux}",
-    "migration_tool_root": "{migration_tool_root_linux}",
-    "previous_fixes": {phase_a_previous_fixes},
-    "run_stats": {
-      "run_count": {phase_a_run_count},
-      "phase_a_result": "pass"
-    },
-    "migration_tasks_implemented": {all_implemented_tasks},
-    "tasks_blocked": {all_blocked_tasks}
-  }
-```
-
-- **1 선택**: meta-agent 기동 후 Step 5.5로 진행
-- **2 선택**: meta-agent 기동 후 해당 그룹 migration-agent 재호출 → 완료 후 Step 5.5
-- **3 선택**: meta-agent 기동 없이 Step 6으로 이동 (중단 — 문서 업데이트 없음)
+- **1 선택**: Step 5.5로 진행
+- **2 선택**: 해당 그룹 migration-agent 재호출 → 완료 후 Step 5.5
+- **3 선택**: Step 6으로 이동 (중단)
 
 ## Step 5.5 — 비교 캡처 (JSP vs React)
 
@@ -447,45 +397,10 @@ node scripts/capture-react.cjs \
 kill $TAIL_PID 2>/dev/null || true
 ```
 
-### 6-2. `meta_agent_clean_runs` 업데이트
-
-meta-agent가 종료 시 `automation/logs/meta-agent-last-result.json`에 결과를 기록합니다. 이 파일을 읽어 카운터를 결정합니다:
-
-```bash
-RESULT_FILE="{migration_tool_root_linux}/automation/logs/meta-agent-last-result.json"
-if [[ -f "$RESULT_FILE" ]]; then
-  RESULT=$(jq -r '.result' "$RESULT_FILE" 2>/dev/null || echo "unknown")
-else
-  RESULT="no_file"
-fi
-echo "meta-agent result: $RESULT"
-```
-
-- `result == "NO_WORK"` 또는 `"no_file"` (기동 안 됨): `meta_agent_clean_runs += 1`
-- `result == "UPDATED"`: `meta_agent_clean_runs = 0`
-
-**예외 — meta-agent가 한 번도 기동되지 않은 경우** (Step 4.5 스킵 + Step 5e에서 "3. 중단"):
-- `migration_tasks_implemented`와 `previous_fixes`가 모두 비어있으면: 카운터만 올리고 종료
-- 하나라도 있으면: meta-agent를 **foreground**로 호출합니다:
-
-```
-subagent_type: meta-agent
-prompt: |
-  {
-    "trigger": "fallback_foreground",
-    "project_root": "{project_root_linux}",
-    "migration_tool_root": "{migration_tool_root_linux}",
-    "previous_fixes": {phase_a_previous_fixes},
-    "migration_tasks_implemented": {all_implemented_tasks},
-    "run_stats": { "phase_a_result": "pass" }
-  }
-```
-
-### 6-3. next-session-manifest.json 업데이트
+### 6-2. next-session-manifest.json 업데이트
 
 ```json
 {
-  "meta_agent_clean_runs": {updated_value},
   "latest_run": {
     "run_id": "{YYYYMMDD-HHMMSS}",
     "status": "success",
@@ -498,3 +413,5 @@ prompt: |
 ```
 
 완료 후 최종 결과를 사용자에게 보고합니다.
+
+> 문서/설정/git 정리가 필요하면 `/update-docs`를 실행하세요.

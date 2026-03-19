@@ -50,3 +50,6 @@ LATEST_STATE.md
 TASK_BOARD.md
 automation/next-session-manifest.json
 
+# Session-generated diagram artifacts (Excalidraw, etc.)
+*.excalidraw
+

@@ -146,3 +146,11 @@ Always commit in clean initial state: `LATEST_STATE.md` (Phase 0), `TASK_BOARD.m
 - All files must use **UTF-8 without BOM**.
 - Never use PowerShell default encoding to write files.
 - On mojibake: stop, compare with `git show HEAD:<file>`.
+
+## State Drift Prevention
+
+- Document state changes **only after verifying file existence** on disk
+- Phase A "Skill Validation" step must pass before marking any Phase as complete
+- If `validate-skill-integration.sh` fails, root cause is likely a path mismatch — check actual file locations before assuming files are missing
+- Always check run logs: `automation/logs/run-*.json` → `failed_step` field
+- If BUG_REPORT.md shows FAIL, sync LATEST_STATE.md + TASK_BOARD.md to actual state immediately

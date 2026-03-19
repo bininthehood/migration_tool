@@ -52,7 +52,6 @@ If the Agent tool is not available, paste the input directly into a new message 
 Sub-agent types:
 - `dev-agent` — code fixes for test failures
 - `migration-agent` — React implementation tasks from TASK_BOARD
-- `meta-agent` — doc updates after loop terminates
 
 ## State Tracking
 
@@ -123,25 +122,26 @@ Write orchestrator-progress.md (현재 상태: "Step 0 완료 — Phase A 스킵
 
 ---
 
-### Step 0.5 — Dev Server Start
+### Step 0.5 — Dev Server Status Check
 
-**Before starting**: Write orchestrator-progress.md (현재 상태: "Step 0.5 — dev 서버 시작 중")
+**Before starting**: Write orchestrator-progress.md (현재 상태: "Step 0.5 — dev 서버 상태 확인 중")
 
 Check if `:3000` is already listening:
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null
+if nc -z localhost 3000 2>/dev/null || ss -ltn 2>/dev/null | grep -q ':3000 '; then
+  echo "Dev server :3000 running"
+else
+  echo "⚠ Dev server :3000 not running"
+fi
 ```
 
-If NOT running:
-```bash
-cd {project_root}/src/main/frontend && BROWSER=none npm start > {migration_tool_root}/automation/logs/devserver.log 2>&1 &
-```
-Wait up to 30s for `:3000` to become available (poll every 3s).
-If it doesn't start: report `FRONTEND_DEVSERVER_START_FAIL` to user and stop.
+**Do NOT start the dev server automatically.** Dev server is managed by the user in a separate terminal.
+- If running: proceed immediately.
+- If NOT running: log the status and continue anyway.
+  - `--skip-tomcat-check` mode does not require `:3000` for Phase A checks.
+  - If a later step fails due to missing dev server, report `FRONTEND_DEVSERVER_START_FAIL` with instruction: "dev 서버를 별도 터미널에서 실행하세요: `cd src/main/frontend && npm start`"
 
-If already running: proceed immediately.
-
-Write orchestrator-progress.md (현재 상태: "Step 0.5 완료 — dev 서버 :3000 실행 중")
+Write orchestrator-progress.md (현재 상태: "Step 0.5 완료 — dev 서버 :3000 상태 확인됨")
 
 ---
 

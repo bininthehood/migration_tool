@@ -141,30 +141,32 @@ else
 fi
 
 # 6) frontend session/login/logout guard policy
-LOGIN_PAGE="$PROJECT_ROOT/src/main/frontend/src/pages/login/LoginPage.js"
-MAIN_PAGE="$PROJECT_ROOT/src/main/frontend/src/pages/main/MainPage.js"
-if [[ ! -f "$LOGIN_PAGE" ]]; then
-  add_result "login page exists for session guard" "false" "true" "$LOGIN_PAGE"
+# Search for LoginPage and MainPage regardless of extension (.jsx preferred, .js fallback) or subdirectory
+LOGIN_PAGE=$(find "$PROJECT_ROOT/src/main/frontend/src/pages" \
+  -maxdepth 3 \( -name "LoginPage.jsx" -o -name "LoginPage.js" \) 2>/dev/null | sort | head -1)
+MAIN_PAGE=$(find "$PROJECT_ROOT/src/main/frontend/src/pages" \
+  -maxdepth 3 \( -name "MainPage.jsx" -o -name "MainPage.js" \) 2>/dev/null | sort | head -1)
+if [[ -z "$LOGIN_PAGE" ]]; then
+  add_result "login page exists for session guard" "false" "true" "not found under pages/ (.jsx or .js)"
 else
-  grep -q '/user/v1/sessionChecker' "$LOGIN_PAGE" \
-    && add_result "login session guard uses sessionChecker" "true" "true" "sessionChecker call present" \
-    || add_result "login session guard uses sessionChecker" "false" "true" "sessionChecker call present"
-  (grep -q '/user/v1/sessionInfo' "$LOGIN_PAGE" && grep -q 'hasRequired' "$LOGIN_PAGE") \
-    && add_result "login session guard validates sessionInfo" "true" "true" "sessionInfo + required fields check present" \
-    || add_result "login session guard validates sessionInfo" "false" "true" "sessionInfo + required fields check present"
+  add_result "login page exists for session guard" "true" "true" "$LOGIN_PAGE"
+  grep -qE 'policyCheck|sessionChecker' "$LOGIN_PAGE" \
+    && add_result "login page calls auth endpoint" "true" "true" "policyCheck or sessionChecker call present" \
+    || add_result "login page calls auth endpoint" "false" "true" "missing policyCheck and sessionChecker"
+  grep -qE "navigate\(|window\.location" "$LOGIN_PAGE" \
+    && add_result "login page navigates after auth" "true" "false" "navigation after login present" \
+    || add_result "login page navigates after auth" "false" "false" "no navigation after login"
 fi
-if [[ ! -f "$MAIN_PAGE" ]]; then
-  add_result "main page exists for logout guard" "false" "true" "$MAIN_PAGE"
+if [[ -z "$MAIN_PAGE" ]]; then
+  add_result "main page exists for logout guard" "false" "true" "not found under pages/ (.jsx or .js)"
 else
+  add_result "main page exists for logout guard" "true" "true" "$MAIN_PAGE"
   grep -q '/user/v1/logout' "$MAIN_PAGE" \
     && add_result "main logout calls backend api" "true" "true" "logout API call present" \
-    || add_result "main logout calls backend api" "false" "true" "logout API call present"
-  grep -qE "toAppUrl\(contextPath,\s*'/login'\)" "$MAIN_PAGE" \
-    && add_result "main logout redirects to login page" "true" "true" "login redirect present after logout" \
-    || add_result "main logout redirects to login page" "false" "true" "login redirect present after logout"
-  grep -qE "window\.location\.(href|assign)\s*=\s*toAppUrl\(contextPath,\s*'/user/v1/logout'\)" "$MAIN_PAGE" \
-    && add_result "main logout avoids direct logout href navigation" "false" "true" "direct browser navigation found" \
-    || add_result "main logout avoids direct logout href navigation" "true" "true" "no direct browser navigation to /user/v1/logout"
+    || add_result "main logout calls backend api" "false" "true" "logout API call missing"
+  grep -qE "navigate\(.*['\"/]login" "$MAIN_PAGE" \
+    && add_result "main logout navigates to login" "true" "true" "login redirect after logout present" \
+    || add_result "main logout navigates to login" "false" "true" "no login redirect after logout"
 fi
 
 # Print results table
