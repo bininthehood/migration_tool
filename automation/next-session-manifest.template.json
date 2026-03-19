@@ -4,7 +4,7 @@
   "phase": "인벤토리(Inventory) — Phase 0 미착수",
   "purpose": "Compact execution manifest. Development phase — Tomcat/session checks skipped by default. Eclipse Publish is a manual milestone step.",
   "read_order": [
-    "AGENTS.md",
+    "CLAUDE.md",
     "automation/next-session-manifest.json",
     "LATEST_STATE.md",
     "docs/project-docs/MIGRATION_AUTOMATION_FEEDBACK.md"

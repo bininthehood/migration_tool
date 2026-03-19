@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - SPA deploy target: `src/main/webapp/ui`
 - DispatcherServlet mapping: `/`
 - Local contextPath: `/rays` / Production contextPath: `/`
-- Current target project: `/home/rays/projects/ArcFlow_Webv1.2`
+- Current target project: `<project-root>` (set in `next-session-manifest.json`)
 
 **North Star:** Migrate all JSP screens to React SPA under `/ui/...`. Zero JSP ViewResolver dependencies.
 
@@ -29,7 +29,7 @@ If `next-session-manifest.json → setup_required.frontend_dir_missing == true`,
 ```bash
 # Phase A: infrastructure pre-flight (preferred daily command)
 bash migration_tool/automation/run-all.sh \
-  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
+  --project-root <project-root> \
   --capture-mode none \
   --skip-tomcat-check \
   --skip-session-contract-check \
@@ -37,11 +37,11 @@ bash migration_tool/automation/run-all.sh \
 
 # First-time setup
 bash migration_tool/automation/bootstrap-frontend.sh \
-  --project-root /home/rays/projects/ArcFlow_Webv1.2 \
+  --project-root <project-root> \
   --apply --install-deps
 
 # Frontend build (manual human gate)
-cd /home/rays/projects/ArcFlow_Webv1.2/src/main/frontend && npm run build
+cd <project-root>/src/main/frontend && npm run build
 ```
 
 Always use `preferred_flow.command` from `next-session-manifest.json`. Do not construct manually.
@@ -93,7 +93,7 @@ Outputs: `automation/logs/run-YYYYMMDD-HHMMSS.json`, `MIGRATION_AUTOMATION_FEEDB
 ## Session Rules
 
 - Always verify actual endpoints from Spring controllers before writing `sessionGuard.js`
-- This project: `sessionChecker` = session validation, `sessionInfo` does not exist
+- Always verify actual session endpoints from Spring controllers before writing `sessionGuard.js` — endpoint names vary per project
 - Store `siteCode`/`levelCode` in sessionStorage at login — required for permission APIs
 
 Session guard + siteCode/levelCode 패턴 상세: @.claude/patterns/session-data.md
